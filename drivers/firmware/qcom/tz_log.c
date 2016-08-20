@@ -329,6 +329,7 @@ static uint32_t debug_rw_buf_size;
  * Debugfs data structure and functions
  */
 
+#ifdef CONFIG_DEBUG_FS
 static int _disp_tz_general_stats(void)
 {
 	int len = 0;
@@ -854,6 +855,7 @@ const struct file_operations tzdbg_fops = {
 	.read    = tzdbgfs_read,
 	.open    = tzdbgfs_open,
 };
+#endif
 
 static struct ion_client  *g_ion_clnt;
 static struct ion_handle *g_ihandle;
@@ -947,6 +949,7 @@ err1:
 static int  tzdbgfs_init(struct platform_device *pdev)
 {
 	int rc = 0;
+#ifdef CONFIG_DEBUG_FS
 	int i;
 	struct dentry           *dent_dir;
 	struct dentry           *dent;
@@ -981,16 +984,19 @@ static int  tzdbgfs_init(struct platform_device *pdev)
 err:
 	debugfs_remove_recursive(dent_dir);
 
+#endif
 	return rc;
 }
 
 static void tzdbgfs_exit(struct platform_device *pdev)
 {
+#ifdef CONFIG_DEBUG_FS
 	struct dentry           *dent_dir;
 
 	kzfree(tzdbg.disp_buf);
 	dent_dir = platform_get_drvdata(pdev);
 	debugfs_remove_recursive(dent_dir);
+#endif
 	if (g_ion_clnt != NULL) {
 		if (!IS_ERR_OR_NULL(g_ihandle)) {
 			ion_unmap_kernel(g_ion_clnt, g_ihandle);
