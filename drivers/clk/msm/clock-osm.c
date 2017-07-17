@@ -773,6 +773,7 @@ static struct clk_osm pwrcl_clk = {
 	.cpu_reg_mask = 0x3,
 	.c = {
 		.dbg_name = "pwrcl_clk",
+		.flags = CLKFLAG_NO_RATE_CACHE,
 		.ops = &clk_ops_cpu_osm,
 		.parent = &xo_ao.c,
 		CLK_INIT(pwrcl_clk.c),
@@ -784,6 +785,7 @@ static struct clk_osm perfcl_clk = {
 	.cpu_reg_mask = 0x103,
 	.c = {
 		.dbg_name = "perfcl_clk",
+		.flags = CLKFLAG_NO_RATE_CACHE,
 		.ops = &clk_ops_cpu_osm,
 		.parent = &xo_ao.c,
 		CLK_INIT(perfcl_clk.c),
