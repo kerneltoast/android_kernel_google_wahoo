@@ -4824,12 +4824,14 @@ static int fg_gen3_probe(struct platform_device *pdev)
 	/* Keep BSOC_DELTA_IRQ irq disabled until we require it */
 	vote(chip->delta_bsoc_irq_en_votable, DELTA_BSOC_IRQ_VOTER, 0, 0);
 
+#ifdef CONFIG_DEBUG_FS
 	rc = fg_debugfs_create(chip);
 	if (rc < 0) {
 		dev_err(chip->dev, "Error in creating debugfs entries, rc:%d\n",
 			rc);
 		goto exit;
 	}
+#endif
 
 	/* TODO(b/37486656): Remove the WAR when bootloader change is
 	 * integrated.
