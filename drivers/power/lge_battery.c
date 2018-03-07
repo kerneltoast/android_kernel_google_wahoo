@@ -658,25 +658,25 @@ static int bm_init(struct battery_manager *bm)
 	bm->batt_psy = power_supply_get_by_name("battery");
 	if (!bm->batt_psy) {
 		pr_bm(ERROR, "Couldn't get batt_psy\n");
-		return -ENODEV;
+		return -EPROBE_DEFER;
 	}
 
 	bm->usb_psy = power_supply_get_by_name("usb");
 	if (!bm->usb_psy) {
 		pr_bm(ERROR, "Couldn't get usb_psy\n");
-		return -ENODEV;
+		return -EPROBE_DEFER;
 	}
 
 	bm->pl_psy = power_supply_get_by_name("parallel");
 	if (!bm->pl_psy) {
 		pr_bm(ERROR, "Couldn't get pl_psy\n");
-		return -ENODEV;
+		return -EPROBE_DEFER;
 	}
 
 	bm->bms_psy = power_supply_get_by_name("bms");
 	if (!bm->bms_psy) {
 		pr_bm(ERROR, "Couldn't get bms_psy\n");
-		return -ENODEV;
+		return -EPROBE_DEFER;
 	}
 
 	rc = bm_get_property(bm->batt_psy,
