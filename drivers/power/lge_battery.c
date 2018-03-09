@@ -710,6 +710,11 @@ static int bm_init(struct battery_manager *bm)
 	if (rc < 0) {
 		bm->batt_id = BM_BATT_TOCAD;
 	} else {
+		if (!batt_id) {
+			pr_bm(ERROR, "Battery id is zero, deferring probe!\n");
+			return -EPROBE_DEFER;
+		}
+
 		for (i = 0; i < BM_BATT_MAX; i++) {
 			if (valid_batt_id[i].min <= batt_id &&
 			    valid_batt_id[i].max >= batt_id)
