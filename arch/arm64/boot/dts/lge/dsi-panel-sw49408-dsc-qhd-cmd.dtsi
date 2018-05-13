@@ -60,6 +60,7 @@
 		qcom,mdss-dsi-te-using-te-pin;
 		qcom,ulps-enabled;
 		qcom,suspend-ulps-enabled;
+		qcom,panel-allow-phy-poweroff;
 		qcom,mdss-dsi-lp11-init;
 		qcom,mdss-dsi-tx-eot-append;
 		qcom,mdss-mdp-transfer-time-us = <15000>;
