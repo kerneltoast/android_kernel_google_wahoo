@@ -71,7 +71,7 @@ static void scm_disable_sdi(void);
 #endif
 
 static int in_panic;
-static int download_mode = 1;
+static int download_mode;
 static struct kobject dload_kobj;
 static void *dload_mode_addr, *dload_type_addr;
 static bool dload_mode_enabled;
