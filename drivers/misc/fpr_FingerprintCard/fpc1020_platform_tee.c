@@ -26,9 +26,11 @@
 
 #include <linux/atomic.h>
 #include <linux/delay.h>
+#include <linux/fb.h>
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
 #include <linux/kernel.h>
+#include <linux/kthread.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/of.h>
@@ -79,6 +81,12 @@ struct fpc1020_data {
 	struct mutex lock; /* To set/get exported values in sysfs */
 	bool prepared;
 	atomic_t wakeup_enabled; /* Used both in ISR and non-ISR */
+
+	struct notifier_block fb_notif;
+	struct task_struct *irq_thread;
+	wait_queue_head_t irq_waitq;
+	atomic_t irq_ready;
+	bool use_thread;
 };
 
 static int vreg_setup(struct fpc1020_data *fpc1020, const char *name,
@@ -437,6 +445,33 @@ static const struct attribute_group attribute_group = {
 	.attrs = attributes,
 };
 
+static void fpc1020_notify_userspace(struct fpc1020_data *fpc1020)
+{
+	sysfs_notify(&fpc1020->dev->kobj, NULL, dev_attr_irq.attr.name);
+}
+
+static int fpc1020_irq_thread(void *data)
+{
+	struct fpc1020_data *fpc1020 = data;
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
+
+	sched_setscheduler(current, SCHED_FIFO, &param);
+
+	while (1) {
+		wait_event(fpc1020->irq_waitq,
+			atomic_read(&fpc1020->irq_ready) ||
+			kthread_should_stop());
+
+		if (kthread_should_stop())
+			break;
+
+		atomic_set(&fpc1020->irq_ready, 0);
+		fpc1020_notify_userspace(fpc1020);
+	}
+
+	return 0;
+}
+
 static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 {
 	struct fpc1020_data *fpc1020 = handle;
@@ -448,9 +483,49 @@ static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 					msecs_to_jiffies(FPC_TTW_HOLD_TIME));
 	}
 
-	sysfs_notify(&fpc1020->dev->kobj, NULL, dev_attr_irq.attr.name);
+	if (fpc1020->use_thread) {
+		atomic_set(&fpc1020->irq_ready, 1);
+		wake_up_all(&fpc1020->irq_waitq);
+	} else {
+		fpc1020_notify_userspace(fpc1020);
+	}
 
 	return IRQ_HANDLED;
+}
+
+static int fb_notifier_callback(struct notifier_block *nb,
+		unsigned long action, void *data)
+{
+	static const unsigned long big_cluster_cpus = 0xf0;
+	struct fpc1020_data *fpc1020 =
+		container_of(nb, typeof(*fpc1020), fb_notif);
+	struct fb_event *evdata = data;
+	int *blank = evdata->data;
+
+	/* Parse framebuffer events as soon as they occur */
+	if (action != FB_EARLY_EVENT_BLANK)
+		return NOTIFY_OK;
+
+	if (*blank == FB_BLANK_UNBLANK) {
+		fpc1020->irq_thread = kthread_create(fpc1020_irq_thread,
+			fpc1020, "fpc1020_irq");
+		if (!fpc1020->irq_thread)
+			return NOTIFY_OK;
+
+		kthread_bind_mask(fpc1020->irq_thread,
+			to_cpumask(&big_cluster_cpus));
+		wake_up_process(fpc1020->irq_thread);
+
+		fpc1020->use_thread = true;
+	} else {
+		fpc1020->use_thread = false;
+
+		if (fpc1020->irq_thread)
+			kthread_stop(fpc1020->irq_thread);
+		fpc1020->irq_thread = NULL;
+	}
+
+	return NOTIFY_OK;
 }
 
 static int fpc1020_request_named_gpio(struct fpc1020_data *fpc1020,
@@ -593,6 +668,10 @@ static int fpc1020_probe(struct platform_device *pdev)
 	}
 
 	rc = hw_reset(fpc1020);
+
+	init_waitqueue_head(&fpc1020->irq_waitq);
+	fpc1020->fb_notif.notifier_call = fb_notifier_callback;
+	fb_register_client(&fpc1020->fb_notif);
 
 	dev_info(dev, "%s: ok\n", __func__);
 
