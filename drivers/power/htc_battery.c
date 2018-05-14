@@ -936,9 +936,32 @@ static int htc_battery_fb_register(void)
 	return 0;
 }
 
+static bool htc_correct_battery_type(struct power_supply *bms_psy)
+{
+	union power_supply_propval pval;
+	int rc;
+
+	rc = power_supply_get_property(bms_psy,
+		POWER_SUPPLY_PROP_BATTERY_TYPE, &pval);
+	if (rc < 0) {
+		BATT_ERR("Couldn't read battery type, rc=%d\n", rc);
+		return false;
+	}
+
+	return strstr(pval.strval, "walleye");
+}
+
 static int htc_battery_probe(struct platform_device *pdev)
 {
+	struct power_supply *bms_psy;
 	int rc = 0;
+
+	bms_psy = power_supply_get_by_name("bms");
+	if (!bms_psy)
+		return -EPROBE_DEFER;
+
+	if (!htc_correct_battery_type(bms_psy))
+		return -ENODEV;
 
 	mutex_lock(&htc_battery_lock);
 

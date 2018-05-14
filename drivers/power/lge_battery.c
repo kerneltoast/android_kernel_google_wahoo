@@ -768,10 +768,33 @@ static int bm_init(struct battery_manager *bm)
 	return 0;
 }
 
+static bool lge_correct_battery_type(struct power_supply *bms_psy)
+{
+	union power_supply_propval pval;
+	int rc;
+
+	rc = power_supply_get_property(bms_psy,
+		POWER_SUPPLY_PROP_BATTERY_TYPE, &pval);
+	if (rc < 0) {
+		pr_bm(ERROR, "Couldn't read battery type, rc=%d\n", rc);
+		return false;
+	}
+
+	return strstr(pval.strval, "lge");
+}
+
 static int lge_battery_probe(struct platform_device *pdev)
 {
 	struct battery_manager *bm;
+	struct power_supply *bms_psy;
 	int rc = 0;
+
+	bms_psy = power_supply_get_by_name("bms");
+	if (!bms_psy)
+		return -EPROBE_DEFER;
+
+	if (!lge_correct_battery_type(bms_psy))
+		return -ENODEV;
 
 	bm = devm_kzalloc(&pdev->dev, sizeof(struct battery_manager),
 			  GFP_KERNEL);
