@@ -77,7 +77,7 @@ static int irq_affinity_hint_proc_show(struct seq_file *m, void *v)
 #define is_affinity_mask_valid(val) 1
 #endif
 
-int no_irq_affinity;
+int no_irq_affinity = 1;
 static int irq_affinity_proc_show(struct seq_file *m, void *v)
 {
 	return show_irq_affinity(0, m, v);
