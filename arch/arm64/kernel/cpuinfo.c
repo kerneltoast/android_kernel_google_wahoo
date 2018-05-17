@@ -276,3 +276,22 @@ void __init cpuinfo_store_boot_cpu(void)
 	boot_cpu_data = *info;
 	init_cpu_features(&boot_cpu_data);
 }
+
+static bool is_taimen;
+
+static int __init get_hardware(char *cmdline)
+{
+	is_taimen = !strcmp(cmdline, "taimen");
+	return 0;
+}
+__setup("androidboot.hardware=", get_hardware);
+
+bool is_google_taimen(void)
+{
+	return is_taimen;
+}
+
+bool is_google_walleye(void)
+{
+	return !is_taimen;
+}
