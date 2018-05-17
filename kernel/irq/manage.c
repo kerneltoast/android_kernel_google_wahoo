@@ -1114,6 +1114,23 @@ setup_irq_thread(struct irqaction *new, unsigned int irq, bool secondary)
 	return 0;
 }
 
+static bool is_perf_crit_irq(const char *irq_name)
+{
+	static const char *const perf_crit_irqs[] = {
+		"MDSS",
+		"kgsl-3d0",
+		"soc:fp_fpc1020"
+	};
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(perf_crit_irqs); i++) {
+		if (!strcmp(perf_crit_irqs[i], irq_name))
+			return true;
+	}
+
+	return false;
+}
+
 /*
  * Internal function to register an irqaction - typically used to
  * allocate special interrupts that are part of the architecture.
@@ -1336,7 +1353,16 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 		}
 
 		/* Set default affinity mask once everything is setup */
-		setup_affinity(desc, mask);
+		if (is_perf_crit_irq(new->name)) {
+			static const unsigned long big_cluster_cpus = 0xf0;
+			const struct cpumask *m = to_cpumask(&big_cluster_cpus);
+
+			irq_set_affinity_locked(&desc->irq_data, m, true);
+			if (new->thread)
+				kthread_bind_mask(new->thread, m);
+		} else {
+			setup_affinity(desc, mask);
+		}
 
 	} else if (new->flags & IRQF_TRIGGER_MASK) {
 		unsigned int nmsk = new->flags & IRQF_TRIGGER_MASK;
