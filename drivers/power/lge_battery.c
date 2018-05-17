@@ -16,6 +16,7 @@
 #include <linux/platform_device.h>
 #include <linux/power_supply.h>
 #include <linux/slab.h>
+#include <linux/wahoo_info.h>
 #include <linux/wakelock.h>
 
 #define BATT_DRV_NAME	"lge_battery"
@@ -860,6 +861,9 @@ static struct platform_driver lge_battery_driver = {
 static int __init lge_battery_init(void)
 {
 	int ret;
+
+	if (!is_google_taimen())
+		return -ENODEV;
 
 	ret = platform_device_register(&lge_battery_pdev);
 	if (ret < 0) {
