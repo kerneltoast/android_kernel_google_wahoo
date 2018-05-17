@@ -2488,9 +2488,19 @@ static struct i2c_driver fts_i2c_driver = {
 	.id_table = fts_device_id,
 };
 
+static struct work_struct fts_init_work;
+
+static void fts_driver_init_worker(struct work_struct *work)
+{
+	i2c_add_driver(&fts_i2c_driver);
+}
+
 static int __init fts_driver_init(void)
 {
-	return i2c_add_driver(&fts_i2c_driver);
+	INIT_WORK(&fts_init_work, fts_driver_init_worker);
+	schedule_work(&fts_init_work);
+
+	return 0;
 }
 
 static void __exit fts_driver_exit(void)
