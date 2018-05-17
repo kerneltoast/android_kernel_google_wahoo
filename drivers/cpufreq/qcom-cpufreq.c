@@ -36,12 +36,27 @@ static struct clk *l2_clk;
 static DEFINE_PER_CPU(struct cpufreq_frequency_table *, freq_table);
 static bool hotplug_ready;
 
+/* Amount of time to boost all online CPUs upon exiting deep sleep */
+#define PM_WAKE_BOOST_MS (20)
+static bool is_boosted;
+static bool suspended_once;
+static struct mutex cpu_clk_lock;
+static struct delayed_work pm_unboost_work;
+
 struct cpufreq_suspend_t {
 	struct mutex suspend_mutex;
 	int device_suspended;
 };
 
 static DEFINE_PER_CPU(struct cpufreq_suspend_t, suspend_data);
+
+static int set_cpu_freq_raw(int cpu, unsigned long rate, bool boost_src)
+{
+	if (is_boosted && !boost_src)
+		return 0;
+
+	return clk_set_rate(cpu_clk[cpu], rate);
+}
 
 static int set_cpu_freq(struct cpufreq_policy *policy, unsigned int new_freq,
 			unsigned int index)
@@ -58,7 +73,11 @@ static int set_cpu_freq(struct cpufreq_policy *policy, unsigned int new_freq,
 
 	rate = new_freq * 1000;
 	rate = clk_round_rate(cpu_clk[policy->cpu], rate);
-	ret = clk_set_rate(cpu_clk[policy->cpu], rate);
+
+	mutex_lock(&cpu_clk_lock);
+	ret = set_cpu_freq_raw(policy->cpu, rate, false);
+	mutex_unlock(&cpu_clk_lock);
+
 	cpufreq_freq_transition_end(policy, &freqs, ret);
 
 	return ret;
@@ -232,9 +251,50 @@ static struct notifier_block __refdata msm_cpufreq_cpu_notifier = {
 	.notifier_call = msm_cpufreq_cpu_callback,
 };
 
+void msm_do_pm_boost(bool do_boost)
+{
+	struct cpufreq_policy policy;
+	unsigned long rate;
+	int cpu;
+
+	if (!suspended_once)
+		return;
+
+	get_online_cpus();
+	mutex_lock(&cpu_clk_lock);
+
+	is_boosted = do_boost;
+	for_each_online_cpu(cpu) {
+		if (cpufreq_get_policy(&policy, cpu))
+			continue;
+
+		if (do_boost)
+			rate = policy.cpuinfo.max_freq;
+		else
+			rate = policy.cur;
+
+		set_cpu_freq_raw(cpu, rate * 1000, true);
+	}
+
+	mutex_unlock(&cpu_clk_lock);
+	put_online_cpus();
+
+	if (do_boost)
+		schedule_delayed_work(&pm_unboost_work,
+			msecs_to_jiffies(PM_WAKE_BOOST_MS));
+}
+
+static void cpu_pm_unboost_worker(struct work_struct *work)
+{
+	msm_do_pm_boost(false);
+}
+
 static int msm_cpufreq_suspend(void)
 {
 	int cpu;
+
+	suspended_once = true;
+	cancel_delayed_work_sync(&pm_unboost_work);
 
 	for_each_possible_cpu(cpu) {
 		mutex_lock(&per_cpu(suspend_data, cpu).suspend_mutex);
@@ -469,6 +529,9 @@ static int __init msm_cpufreq_register(void)
 		mutex_init(&(per_cpu(suspend_data, cpu).suspend_mutex));
 		per_cpu(suspend_data, cpu).device_suspended = 0;
 	}
+
+	mutex_init(&cpu_clk_lock);
+	INIT_DELAYED_WORK(&pm_unboost_work, cpu_pm_unboost_worker);
 
 	rc = platform_driver_probe(&msm_cpufreq_plat_driver,
 				   msm_cpufreq_probe);
