@@ -1028,9 +1028,9 @@ int msm_pinctrl_remove(struct platform_device *pdev)
 }
 EXPORT_SYMBOL(msm_pinctrl_remove);
 
-static inline void set_gpio_bits(unsigned int n, void __iomem *reg)
+static inline void clear_gpio_bits(unsigned int n, void __iomem *reg)
 {
-	__raw_writel_no_log(__raw_readl_no_log(reg) | n, reg);
+	__raw_writel_no_log(__raw_readl_no_log(reg) & ~n, reg);
 }
 
 static void __msm_gpio_install_direct_irq(struct msm_pinctrl *pctrl,
@@ -1043,7 +1043,7 @@ static void __msm_gpio_install_direct_irq(struct msm_pinctrl *pctrl,
 
 	g = &pctrl->soc->groups[gpio];
 
-	set_gpio_bits(BIT(g->oe_bit), pctrl->regs + g->ctl_reg);
+	clear_gpio_bits(BIT(g->oe_bit), pctrl->regs + g->ctl_reg);
 	cfg = __raw_readl_no_log(pctrl->regs + g->intr_cfg_reg);
 	cfg &= ~(7 << g->intr_target_bit | BIT(g->intr_raw_status_bit)
 			| BIT(g->intr_enable_bit));
