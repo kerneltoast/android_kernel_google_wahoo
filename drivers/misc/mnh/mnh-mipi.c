@@ -393,12 +393,12 @@ static uint8_t mnh_mipi_get_vco_cntrl(uint32_t rate)
 	/* vco frequency is half the desired rate */
 	uint32_t freq_kHz = rate * 1000 / 2;
 
-	for (i = 0; i < ARRAY_SIZE(vco_range_cntrls); i++) {
+	for (i = 1; i < ARRAY_SIZE(vco_range_cntrls); i++) {
 		if (freq_kHz < vco_range_cntrls[i].freq_kHz)
-			return vco_range_cntrls[i - 1].cntrl;
+			break;
 	}
 
-	return vco_range_cntrls[i].cntrl;
+	return vco_range_cntrls[i - 1].cntrl;
 }
 
 /* M is required to be between 64 and 625 */
