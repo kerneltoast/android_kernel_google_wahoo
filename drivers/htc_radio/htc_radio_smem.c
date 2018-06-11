@@ -91,7 +91,8 @@ static int htc_radio_smem_probe(struct platform_device *pdev)
 }
 
 static const struct of_device_id htc_radio_smem_of_match[] = {
-	{.compatible = "htc,htc_radio_smem",}
+	{ .compatible = "htc,htc_radio_smem" },
+	{ }
 };
 MODULE_DEVICE_TABLE(of, htc_radio_smem_of_match);
 
