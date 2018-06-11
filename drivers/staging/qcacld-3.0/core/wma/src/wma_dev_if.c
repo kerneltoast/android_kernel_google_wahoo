@@ -2060,7 +2060,7 @@ int wma_vdev_stop_resp_handler(void *handle, uint8_t *cmd_param_info,
 			WMA_LOGE("Failed to send vdev down cmd: vdev %d",
 				req_msg->vdev_id);
 		} else {
-			iface->vdev_up = false;
+			wma->interfaces[resp_event->vdev_id].vdev_up = false;
 			WMA_LOGD(FL("Setting vdev_up flag to false"));
 		}
 
