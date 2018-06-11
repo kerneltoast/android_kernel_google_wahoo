@@ -236,8 +236,9 @@ static const struct dev_pm_ops touch_pm_ops = {
 	.resume = touch_spi_pm_resume,
 };
 
-static struct spi_device_id touch_id[] = {
-	{ LGE_TOUCH_NAME, 0 },
+static const struct spi_device_id touch_id[] = {
+	{ LGE_TOUCH_NAME },
+	{ }
 };
 
 int touch_spi_device_init(struct touch_hwif *hwif, void *driver)
