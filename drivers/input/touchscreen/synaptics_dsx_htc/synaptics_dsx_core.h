@@ -39,6 +39,7 @@
 #define SYNAPTICS_DSX_DRIVER_PRODUCT (SYNAPTICS_DS4 | SYNAPTICS_DS5)
 #define SYNAPTICS_DSX_DRIVER_VERSION 0x2066
 
+#include <linux/pm_qos.h>
 #include <linux/version.h>
 #ifdef CONFIG_FB
 #include <linux/notifier.h>
@@ -516,6 +517,7 @@ struct synaptics_rmi4_data {
 			bool enable);
 	void (*report_touch)(struct synaptics_rmi4_data *rmi4_data,
 			struct synaptics_rmi4_fn *fhandler);
+	struct pm_qos_request pm_qos_req;
 };
 
 struct synaptics_dsx_bus_access {
