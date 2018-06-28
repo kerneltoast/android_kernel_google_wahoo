@@ -32,6 +32,7 @@
 #include <linux/wakelock.h>
 #include <linux/input.h>
 #include <linux/input/mt.h>
+#include <linux/pm_qos.h>
 
 #include <touch_hwif.h>
 #include <linux/input/lge_touch_notify.h>
@@ -499,6 +500,8 @@ struct touch_core_data {
 
 	u32 tx_pa;
 	u32 rx_pa;
+
+	struct pm_qos_request pm_qos_req;
 };
 
 #define PROPERTY_GPIO(np, string, target)				\
