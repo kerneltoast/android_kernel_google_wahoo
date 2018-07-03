@@ -47,6 +47,9 @@
 
 #include "drv2624.h"
 
+static bool disable_vib = false;
+static int level = 100;
+
 static struct drv2624_data *drv2624_plat_data;
 
 static bool drv2624_is_volatile_reg(struct device *dev, unsigned int reg);
@@ -292,7 +295,7 @@ static void vibrator_enable(struct led_classdev *led_cdev,
 
 	dev_dbg(drv2624->dev, "%s: %d\n", __func__, value);
 
-	if (value == LED_OFF)
+	if (value == LED_OFF || disable_vib)
 		queue_work(drv2624->drv2624_wq, &drv2624->stop_work);
 	else
 		queue_work(drv2624->drv2624_wq, &drv2624->work);
@@ -1200,6 +1203,49 @@ static ssize_t scale_store(struct device *dev,
 	return count;
 }
 
+static ssize_t level_show(struct device *dev,
+			  struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", level);
+}
+
+static ssize_t level_store(struct device *dev,
+			   struct device_attribute *attr, const char *buf,
+			   size_t count)
+{
+	struct drv2624_data *drv2624 = dev_get_drvdata(dev);
+	int ret;
+	int interval;
+
+	ret = kstrtoint(buf, 10, &interval);
+	if (ret) {
+		pr_err("Invalid input for loop: ret = %d\n", ret);
+		return ret;
+	}
+
+	level = max(min(interval, 100), 0);
+	disable_vib = false;
+
+	if (level >= 75) {
+		interval = 0;
+	} else if (level >= 50) {
+		interval = 1;
+	} else if (level >=25) {
+		interval = 2;
+	} else if (level > 0) {
+		interval = 3;
+	} else {
+		disable_vib = true;
+		return count;
+	}
+
+	mutex_lock(&drv2624->lock);
+	drv2624_set_bits(drv2624, DRV2624_REG_CONTROL2, SCALE_MASK, interval);
+	mutex_unlock(&drv2624->lock);
+
+	return count;
+}
+
 static ssize_t ctrl_loop_show(struct device *dev,
 			      struct device_attribute *attr, char *buf)
 {
@@ -1493,6 +1539,7 @@ static DEVICE_ATTR(mode, 0660, mode_show, mode_store);
 static DEVICE_ATTR(loop, 0660, loop_show, loop_store);
 static DEVICE_ATTR(interval, 0660, interval_show, interval_store);
 static DEVICE_ATTR(scale, 0660, scale_show, scale_store);
+static DEVICE_ATTR(level, 0660, level_show, level_store);
 static DEVICE_ATTR(ctrl_loop, 0660, ctrl_loop_show, ctrl_loop_store);
 static DEVICE_ATTR(set_sequencer, 0660, NULL, set_sequencer_store);
 static DEVICE_ATTR(od_clamp, 0660, od_clamp_show, od_clamp_store);
@@ -1513,6 +1560,7 @@ static struct attribute *drv2624_fs_attrs[] = {
 	&dev_attr_loop.attr,
 	&dev_attr_interval.attr,
 	&dev_attr_scale.attr,
+	&dev_attr_level.attr,
 	&dev_attr_ctrl_loop.attr,
 	&dev_attr_set_sequencer.attr,
 	&dev_attr_od_clamp.attr,
