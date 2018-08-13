@@ -6,6 +6,10 @@
  * This file is released under the GPLv2.
  */
 
+#if defined(CONFIG_ANDROID) && !defined(CONFIG_DEBUG_FS)
+#define CONFIG_DEBUG_FS
+#endif
+
 #include <linux/device.h>
 #include <linux/slab.h>
 #include <linux/sched.h>
