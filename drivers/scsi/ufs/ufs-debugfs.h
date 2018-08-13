@@ -32,7 +32,7 @@ enum ufsdbg_err_inject_scenario {
 	ERR_INJECT_MAX_ERR_SCENARIOS,
 };
 
-#ifdef CONFIG_DEBUG_FS
+#if defined(CONFIG_DEBUG_FS) || defined(CONFIG_ANDROID)
 void ufsdbg_add_debugfs(struct ufs_hba *hba);
 void ufsdbg_remove_debugfs(struct ufs_hba *hba);
 void ufsdbg_pr_buf_to_std(struct ufs_hba *hba, int offset, int num_regs,
