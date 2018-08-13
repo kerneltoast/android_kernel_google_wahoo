@@ -39,6 +39,7 @@
 			#address-cells = <1>;
 			#size-cells = <1>;
 			label = "pm8005-gpio";
+			status = "disabled";
 
 			gpio@c000 {
 				reg = <0xc000 0x100>;
