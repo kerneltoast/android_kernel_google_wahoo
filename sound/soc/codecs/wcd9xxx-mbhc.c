@@ -5326,10 +5326,6 @@ static int wcd9xxx_detect_impedance(struct wcd9xxx_mbhc *mbhc, uint32_t *zl,
 
 		zdet_zone = wcd9xxx_assign_zdet_zone(*zl, *zr, &gain);
 		switch (zdet_zone) {
-		case ZL_ZONE1__ZR_ZONE1:
-			l_p = NULL;
-			r_p = NULL;
-			break;
 		case ZL_ZONE2__ZR_ZONE2:
 		case ZL_ZONE3__ZR_ZONE3:
 		case ZL_ZR_NOT_IN_ZONE1:
@@ -5351,6 +5347,10 @@ static int wcd9xxx_detect_impedance(struct wcd9xxx_mbhc *mbhc, uint32_t *zl,
 		 */
 			l_p = NULL;
 			r_p = r;
+			break;
+		default:
+			l_p = NULL;
+			r_p = NULL;
 			break;
 		}
 		pr_debug("%s:zdet_zone = %d, gain = %d\n", __func__,
