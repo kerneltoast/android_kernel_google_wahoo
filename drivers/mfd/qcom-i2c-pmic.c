@@ -422,7 +422,7 @@ static irqreturn_t i2c_pmic_irq_handler(int irq, void *dev_id)
 static int i2c_pmic_parse_dt(struct i2c_pmic *chip)
 {
 	struct device_node *node = chip->dev->of_node;
-	int rc, i;
+	int i;
 	u32 temp;
 
 	if (!node) {
@@ -449,7 +449,7 @@ static int i2c_pmic_parse_dt(struct i2c_pmic *chip)
 		return -ENOMEM;
 
 	for (i = 0; i < chip->num_periphs; i++) {
-		rc = of_property_read_u32_index(node, "qcom,periph-map",
+		int rc = of_property_read_u32_index(node, "qcom,periph-map",
 						i, &temp);
 		if (rc < 0) {
 			pr_err("Couldn't read qcom,periph-map[%d] rc=%d\n",
@@ -464,7 +464,7 @@ static int i2c_pmic_parse_dt(struct i2c_pmic *chip)
 
 	of_property_read_string(node, "pinctrl-names", &chip->pinctrl_name);
 
-	return rc;
+	return 0;
 }
 
 #define MAX_I2C_RETRIES	3
