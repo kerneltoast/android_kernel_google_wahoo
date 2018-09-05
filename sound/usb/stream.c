@@ -511,7 +511,6 @@ int snd_usb_parse_audio_interface(struct snd_usb_audio *chip, int iface_no)
 	unsigned int format = 0, num_channels = 0;
 	struct audioformat *fp = NULL;
 	int num, protocol, clock = 0;
-	struct uac_format_type_i_continuous_descriptor *fmt;
 	unsigned int chconfig;
 
 	dev = chip->dev;
@@ -529,6 +528,8 @@ int snd_usb_parse_audio_interface(struct snd_usb_audio *chip, int iface_no)
 		num = 4;
 
 	for (i = 0; i < num; i++) {
+		struct uac_format_type_i_continuous_descriptor *fmt = NULL;
+
 		alts = &iface->altsetting[i];
 		altsd = get_iface_desc(alts);
 		protocol = altsd->bInterfaceProtocol;
@@ -715,6 +716,17 @@ int snd_usb_parse_audio_interface(struct snd_usb_audio *chip, int iface_no)
 			continue;
 
 populate_fp:
+		if (!fmt) {
+			/* get format type */
+			fmt = snd_usb_find_csint_desc(alts->extra, alts->extralen, NULL, UAC_FORMAT_TYPE);
+			if (!fmt) {
+				dev_err(&dev->dev,
+					"%u:%d : no UAC_FORMAT_TYPE desc\n",
+					iface_no, altno);
+				continue;
+			}
+		}
+
 		fp = kzalloc(sizeof(*fp), GFP_KERNEL);
 		if (! fp) {
 			dev_err(&dev->dev, "cannot malloc\n");

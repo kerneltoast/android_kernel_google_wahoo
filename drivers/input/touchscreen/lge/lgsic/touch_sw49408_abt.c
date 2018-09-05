@@ -246,7 +246,7 @@ static void abt_ksocket_start_for_pctool(struct device *dev)
 {
 	static int client_connected;
 	int size, err;
-	unsigned char *buf;
+	unsigned char *buf = NULL;
 	struct socket *sock;
 
 	/* kernel thread initialization */
@@ -286,6 +286,8 @@ static void abt_ksocket_start_for_pctool(struct device *dev)
 	}
 
 	buf = kzalloc(sizeof(struct s_comm_packet), GFP_KERNEL);
+	if (!buf)
+		goto out;
 
 	while (1) {
 		set_current_state(TASK_INTERRUPTIBLE);
@@ -308,8 +310,7 @@ static void abt_ksocket_start_for_pctool(struct device *dev)
 	}
 
 out:
-	if (buf != NULL)
-		kfree(buf);
+	kfree(buf);
 	__set_current_state(TASK_RUNNING);
 	abt_comm.running = 0;
 	abt_comm.thread = NULL;

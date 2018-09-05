@@ -706,6 +706,10 @@ static inline void mem_cgroup_wb_stats(struct bdi_writeback *wb,
 				       unsigned long *pdirty,
 				       unsigned long *pwriteback)
 {
+	*pfilepages = 0;
+	*pheadroom = 0;
+	*pdirty = 0;
+	*pwriteback = 0;
 }
 
 #endif	/* CONFIG_CGROUP_WRITEBACK */

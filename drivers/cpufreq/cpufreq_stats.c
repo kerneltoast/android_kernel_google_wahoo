@@ -553,7 +553,7 @@ int proc_concurrent_policy_time_show(struct seq_file *m,
 {
 	struct cpufreq_policy *policy;
 	struct cpufreq_policy *last_policy = NULL;
-	int cpu, cnt;
+	int cpu, cnt = 0;
 	cputime_t cputime;
 	unsigned long flags;
 
