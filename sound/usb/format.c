@@ -46,7 +46,7 @@ static u64 parse_audio_format_i_type(struct snd_usb_audio *chip,
 				     struct audioformat *fp,
 				     unsigned int format, void *_fmt)
 {
-	int sample_width, sample_bytes;
+	int sample_width = 0, sample_bytes = 0;
 	u64 pcm_formats = 0;
 
 	switch (fp->protocol) {
