@@ -282,7 +282,7 @@ int tas2557_SA_DevChnSetup(struct tas2557_priv *pTAS2557, unsigned int mode)
 	pDevBBuf = buf_DevA_MonoMix_DevB_MonoMix;
 	break;
 	default:
-	break;
+	goto end;
 	}
 
 	if (pDevABuf && pDevBBuf) {
