@@ -474,7 +474,7 @@ static int mnh_transfer_firmware(size_t fw_size, const uint8_t *fw_data,
 	int buf_index = 0;
 	struct mnh_dma_element_t dma_blk;
 	int err = -EINVAL;
-	size_t sent = 0, size, remaining;
+	size_t sent = 0, size = 0, remaining;
 
 	remaining = fw_size;
 

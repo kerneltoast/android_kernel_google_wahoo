@@ -1053,7 +1053,7 @@ static int tcpm_set_in_pr_swap(struct tcpc_dev *dev, bool pr_swap)
 {
 	union power_supply_propval val = {0};
 	struct usbpd *pd = container_of(dev, struct usbpd, tcpc_dev);
-	int ret;
+	int ret = 0;
 
 	mutex_lock(&pd->lock);
 	if (pd->in_pr_swap != pr_swap) {

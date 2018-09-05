@@ -127,7 +127,7 @@ static ssize_t pstore_file_read(struct file *file, char __user *userbuf,
 {
 	struct seq_file *sf = file->private_data;
 	struct pstore_private *ps = sf->private;
-	ssize_t len;
+	ssize_t len = 0;
 
 	if (ps->type == PSTORE_TYPE_FTRACE)
 		return seq_read(file, userbuf, count, ppos);
