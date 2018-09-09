@@ -47,9 +47,6 @@
 
 #include "drv2624.h"
 
-static bool disable_vib = false;
-static int level = 100;
-
 static struct drv2624_data *drv2624_plat_data;
 
 static bool drv2624_is_volatile_reg(struct device *dev, unsigned int reg);
@@ -295,7 +292,7 @@ static void vibrator_enable(struct led_classdev *led_cdev,
 
 	dev_dbg(drv2624->dev, "%s: %d\n", __func__, value);
 
-	if (value == LED_OFF || disable_vib)
+	if (value == LED_OFF || !drv2624->level)
 		queue_work(drv2624->drv2624_wq, &drv2624->stop_work);
 	else
 		queue_work(drv2624->drv2624_wq, &drv2624->work);
@@ -1206,13 +1203,16 @@ static ssize_t scale_store(struct device *dev,
 static ssize_t level_show(struct device *dev,
 			  struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%d\n", level);
+	struct drv2624_data *drv2624 = dev_get_drvdata(dev);
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", drv2624->level);
 }
 
 static ssize_t level_store(struct device *dev,
 			   struct device_attribute *attr, const char *buf,
 			   size_t count)
 {
+	static const u8 level_to_regval[] = { 3, 2, 1, 0 };
 	struct drv2624_data *drv2624 = dev_get_drvdata(dev);
 	int ret;
 	int interval;
@@ -1223,21 +1223,9 @@ static ssize_t level_store(struct device *dev,
 		return ret;
 	}
 
-	level = max(min(interval, 100), 0);
-	disable_vib = false;
-
-	if (level >= 75) {
-		interval = 0;
-	} else if (level >= 50) {
-		interval = 1;
-	} else if (level >=25) {
-		interval = 2;
-	} else if (level > 0) {
-		interval = 3;
-	} else {
-		disable_vib = true;
-		return count;
-	}
+	drv2624->level = clamp(interval, 0, 100);
+	interval = min(drv2624->level / 25, 3);
+	interval = level_to_regval[interval];
 
 	mutex_lock(&drv2624->lock);
 	drv2624_set_bits(drv2624, DRV2624_REG_CONTROL2, SCALE_MASK, interval);
@@ -1698,6 +1686,7 @@ static int drv2624_i2c_probe(struct i2c_client *client,
 	if (err)
 		goto drv2624_i2c_probe_err;
 
+	drv2624->level = 100;
 	err = sysfs_create_group(&drv2624->dev->kobj, &drv2624_fs_attr_group);
 	if (err)
 		goto drv2624_i2c_probe_err;
