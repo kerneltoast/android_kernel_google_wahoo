@@ -324,7 +324,7 @@ _dtbinst_pre_:
 # mkdtimg
 #----------------------------------------------------------------------------
 quiet_cmd_mkdtimg = DTBOIMG $@
-cmd_mkdtimg = mkdtimg cfg_create $@ $<; \
+cmd_mkdtimg = python2 $(srctree)/scripts/ufdt/libufdt/utils/src/mkdtboimg.py cfg_create $@ $<; \
 	if [ ! -z "$(2)" ]; then \
 		dd if=/dev/zero bs=1 count=$$(((`stat -c%s $@`+$(2)-1)/$(2)*$(2)-`stat -c%s $@`)) >> $@; \
 	fi
