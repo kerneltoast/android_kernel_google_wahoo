@@ -19,6 +19,7 @@
 static struct miscdevice audio_ape_misc;
 static struct ws_mgr audio_ape_ws_mgr;
 
+#ifdef CONFIG_DEBUG_FS
 static const struct file_operations audio_ape_debug_fops = {
 	.read = audio_aio_debug_read,
 	.open = audio_aio_debug_open,
@@ -28,6 +29,7 @@ static struct dentry *config_debugfs_create_file(const char *name, void *data)
 	return debugfs_create_file(name, S_IFREG | S_IRUGO,
 			NULL, (void *)data, &audio_ape_debug_fops);
 }
+#endif
 
 static long audio_ioctl_shared(struct file *file, unsigned int cmd,
 						void *arg)
@@ -249,10 +251,12 @@ static int audio_open(struct inode *inode, struct file *file)
 	struct q6audio_aio *audio = NULL;
 	int rc = 0;
 
+#ifdef CONFIG_DEBUG_FS
 	/* 4 bytes represents decoder number, 1 byte for terminate string */
 	char name[sizeof "msm_ape_" + 5];
-	audio = kzalloc(sizeof(struct q6audio_aio), GFP_KERNEL);
+#endif
 
+	audio = kzalloc(sizeof(struct q6audio_aio), GFP_KERNEL);
 	if (!audio) {
 		pr_err("Could not allocate memory for ape decode driver\n");
 		return -ENOMEM;
@@ -315,11 +319,14 @@ static int audio_open(struct inode *inode, struct file *file)
 		goto fail;
 	}
 
+#ifdef CONFIG_DEBUG_FS
 	snprintf(name, sizeof(name), "msm_ape_%04x", audio->ac->session);
 	audio->dentry = config_debugfs_create_file(name, (void *)audio);
 
 	if (IS_ERR_OR_NULL(audio->dentry))
 		pr_debug("debugfs_create_file failed\n");
+#endif
+
 	pr_debug("%s:apedec success mode[%d]session[%d]\n", __func__,
 						audio->feedback,
 						audio->ac->session);
