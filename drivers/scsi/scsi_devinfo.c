@@ -291,7 +291,7 @@ static void scsi_strcpy_devinfo(char *name, char *to, size_t to_length,
 	size_t from_length;
 
 	from_length = strlen(from);
-	strncpy(to, from, min(to_length, from_length));
+	memcpy(to, from, min(to_length, from_length));
 	if (from_length < to_length) {
 		if (compatible) {
 			/*
