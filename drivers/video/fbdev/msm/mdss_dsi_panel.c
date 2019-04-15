@@ -325,6 +325,9 @@ void mdss_dsi_err_detect_irq_control(struct mdss_dsi_ctrl_pdata *ctrl_pdata, boo
 	if (!gpio_is_valid(ctrl_pdata->disp_err_detect_gpio))
 		  return;
 
+	if (cmpxchg(&ctrl_pdata->err_detect_irq_en, !enable, enable) == enable)
+		return;
+
 	irq = gpio_to_irq(ctrl_pdata->disp_err_detect_gpio);
 
 	if (enable) {
