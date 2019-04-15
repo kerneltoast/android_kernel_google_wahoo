@@ -486,6 +486,8 @@ struct touch_core_data {
 	struct early_suspend early_suspend;
 #elif defined(CONFIG_FB)
 	struct notifier_block fb_notif;
+	struct work_struct pm_work;
+	bool screen_off;
 #endif
 	void *touch_device_data;
 
