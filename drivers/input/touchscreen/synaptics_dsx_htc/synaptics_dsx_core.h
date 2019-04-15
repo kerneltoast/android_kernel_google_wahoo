@@ -432,6 +432,7 @@ struct synaptics_rmi4_data {
 	struct workqueue_struct *rb_workqueue;
 #ifdef CONFIG_FB
 	struct notifier_block fb_notifier;
+	struct work_struct pm_work;
 	struct work_struct reset_work;
 	struct workqueue_struct *reset_workqueue;
 #endif
