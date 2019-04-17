@@ -5684,7 +5684,7 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_CORE_HTC)
 	retval = request_threaded_irq(rmi4_data->irq, NULL,
 			synaptics_rmi4_irq,
-			IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
+			IRQF_TRIGGER_HIGH | IRQF_ONESHOT | IRQF_PERF_CRITICAL,
 			PLATFORM_DRIVER_NAME,
 			rmi4_data);
 	if (retval < 0) {
