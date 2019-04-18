@@ -1375,7 +1375,6 @@ static struct sync_fence *__create_fence(struct msm_fb_data_type *mfd,
 	struct mdss_overlay_private *mdp5_data;
 	struct mdss_mdp_ctl *ctl;
 	struct sync_fence *sync_fence = NULL;
-	char fence_name[32];
 
 	mdp5_data = mfd_to_mdp5_data(mfd);
 
@@ -1390,37 +1389,26 @@ static struct sync_fence *__create_fence(struct msm_fb_data_type *mfd,
 		return ERR_PTR(-EPERM);
 	}
 
-	if (fence_type == MDSS_MDP_RETIRE_FENCE)
-		snprintf(fence_name, sizeof(fence_name), "fb%d_retire",
-			mfd->index);
-	else if (fence_type == MDSS_MDP_RELEASE_FENCE)
-		snprintf(fence_name, sizeof(fence_name), "fb%d_release",
-			mfd->index);
-	else if (fence_type == MDSS_MDP_CWB_RETIRE_FENCE)
-		snprintf(fence_name, sizeof(fence_name), "cwb%d_retire",
-			mfd->index);
-
-
 	if ((fence_type == MDSS_MDP_RETIRE_FENCE) &&
 		(mfd->panel.type == MIPI_CMD_PANEL)) {
 		if (mdp5_data->vsync_timeline) {
 			value = mdp5_data->vsync_timeline->value + 1 +
 				mdp5_data->retire_cnt++;
 			sync_fence = mdss_fb_sync_get_fence(
-				mdp5_data->vsync_timeline, fence_name, value);
+				mdp5_data->vsync_timeline, "", value);
 		} else {
 			return ERR_PTR(-EPERM);
 		}
 	} else if (fence_type == MDSS_MDP_CWB_RETIRE_FENCE) {
 		sync_fence = mdss_fb_sync_get_fence(sync_pt_data->timeline,
-				fence_name, sync_pt_data->timeline_value + 1);
+				"", sync_pt_data->timeline_value + 1);
 	} else {
 		sync_fence = mdss_fb_sync_get_fence(sync_pt_data->timeline,
-				fence_name, value);
+				"", value);
 	}
 
 	if (IS_ERR_OR_NULL(sync_fence)) {
-		pr_err("%s: unable to retrieve release fence\n", fence_name);
+		pr_err("%s: unable to retrieve release fence\n", __func__);
 		goto end;
 	}
 
@@ -1428,7 +1416,7 @@ static struct sync_fence *__create_fence(struct msm_fb_data_type *mfd,
 	*fence_fd = get_unused_fd_flags(0);
 	if (*fence_fd < 0) {
 		pr_err("%s: get_unused_fd_flags failed error:0x%x\n",
-			fence_name, *fence_fd);
+			__func__, *fence_fd);
 		sync_fence_put(sync_fence);
 		sync_fence = NULL;
 		goto end;
