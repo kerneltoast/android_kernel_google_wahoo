@@ -110,7 +110,10 @@
 
 #define read_cpuid(reg) ({						\
 	u64 __val;							\
-	asm("mrs_s	%0, " __stringify(reg) : "=r" (__val));		\
+	asm(DEFINE_MRS_S						\
+		"mrs_s	%0, " __stringify(reg) "\n"			\
+		UNDEFINE_MRS_S						\
+		: "=r" (__val));					\
 	__val;								\
 })
 
