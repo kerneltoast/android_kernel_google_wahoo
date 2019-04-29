@@ -42,6 +42,9 @@
 #include <linux/input/mt.h>
 #include "../input-compat.h"
 
+static bool enable_hall_ic;
+module_param(enable_hall_ic, bool, 0644);
+
 static int uinput_dev_event(struct input_dev *dev,
 			    unsigned int type, unsigned int code, int value)
 {
@@ -451,6 +454,11 @@ static ssize_t uinput_inject_events(struct uinput_device *udev,
 		 */
 		if (input_event_from_user(buffer + bytes, &ev))
 			return -EFAULT;
+
+		if (!enable_hall_ic && ev.type == EV_SW) {
+			bytes += input_event_size();
+			continue;
+		}
 
 		input_event(udev->dev, ev.type, ev.code, ev.value);
 		bytes += input_event_size();
