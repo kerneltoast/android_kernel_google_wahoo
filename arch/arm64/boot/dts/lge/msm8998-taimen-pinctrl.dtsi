@@ -258,25 +258,6 @@
 			};
 		};
 
-		/* pin set for Hall IC */
-		hallic_gpio {
-			label = "hallic_gpio";
-			hallic_gpio_active: hallic_gpio_active {
-				hallic_gpio {
-					pins = "gpio124";
-					drive-strength = <2>;
-					bias-pull-up;
-				};
-			};
-			hallic_gpio_suspend: hallic_gpio_suspend {
-				hallic_gpio {
-					pins = "gpio124";
-					drive-strength = <2>;
-					bias-pull-up;
-				};
-			};
-		};
-
 		ts_mux {
 			ts_suspend: ts_suspend {
 				mux {
