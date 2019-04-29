@@ -49,6 +49,28 @@
 
 static struct drv2624_data *drv2624_plat_data;
 
+void drv2624_disable_haptics(void)
+{
+	struct drv2624_data *drv2624;
+
+	drv2624 = READ_ONCE(drv2624_plat_data);
+	if (!drv2624)
+		return;
+
+	atomic_inc(&drv2624->disable_refcnt);
+}
+
+void drv2624_enable_haptics(void)
+{
+	struct drv2624_data *drv2624;
+
+	drv2624 = READ_ONCE(drv2624_plat_data);
+	if (!drv2624)
+		return;
+
+	atomic_dec(&drv2624->disable_refcnt);
+}
+
 static bool drv2624_is_volatile_reg(struct device *dev, unsigned int reg);
 
 static int drv2624_reg_read(struct drv2624_data *drv2624, unsigned char reg)
@@ -292,7 +314,8 @@ static void vibrator_enable(struct led_classdev *led_cdev,
 
 	dev_dbg(drv2624->dev, "%s: %d\n", __func__, value);
 
-	if (value == LED_OFF || !drv2624->level)
+	if (value == LED_OFF || !drv2624->level ||
+	    atomic_read(&drv2624->disable_refcnt) > 0)
 		queue_work(drv2624->drv2624_wq, &drv2624->stop_work);
 	else
 		queue_work(drv2624->drv2624_wq, &drv2624->work);
@@ -1680,8 +1703,6 @@ static int drv2624_i2c_probe(struct i2c_client *client,
 		drv2624_disable_irq(drv2624);
 	}
 
-	drv2624_plat_data = drv2624;
-
 	err = haptics_init(drv2624);
 	if (err)
 		goto drv2624_i2c_probe_err;
@@ -1695,6 +1716,7 @@ static int drv2624_i2c_probe(struct i2c_client *client,
 				&client->dev, GFP_KERNEL, drv2624,
 				drv2624_firmware_load);
 
+	WRITE_ONCE(drv2624_plat_data, drv2624);
 	dev_info(drv2624->dev, "drv2624 probe succeeded\n");
 
 	return 0;
