@@ -159,8 +159,8 @@ struct mdss_mdp_format_params *mdss_mdp_get_format_params(u32 format)
 	int i;
 	bool fmt_found = false;
 
-	for (i = 0; i < ARRAY_SIZE(mdss_mdp_format_map); i++) {
-		fmt = &mdss_mdp_format_map[i];
+	for (i = 0; i < ARRAY_SIZE(mdss_mdp_format_ubwc_map); i++) {
+		fmt = &mdss_mdp_format_ubwc_map[i].mdp_format;
 		if (format == fmt->format) {
 			fmt_found = true;
 			break;
@@ -168,8 +168,8 @@ struct mdss_mdp_format_params *mdss_mdp_get_format_params(u32 format)
 	}
 
 	if (!fmt_found) {
-		for (i = 0; i < ARRAY_SIZE(mdss_mdp_format_ubwc_map); i++) {
-			fmt = &mdss_mdp_format_ubwc_map[i].mdp_format;
+		for (i = 0; i < ARRAY_SIZE(mdss_mdp_format_map); i++) {
+			fmt = &mdss_mdp_format_map[i];
 			if (format == fmt->format)
 				break;
 		}
