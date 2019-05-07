@@ -1165,7 +1165,6 @@ static void affine_one_perf_irq(struct irq_desc *desc)
 	int cpu;
 
 	/* Balance the performance-critical IRQs across all perf CPUs */
-	get_online_cpus();
 	while (1) {
 		cpu = cpumask_next_and(perf_cpu_index, cpu_perf_mask,
 				       cpu_online_mask);
@@ -1174,7 +1173,6 @@ static void affine_one_perf_irq(struct irq_desc *desc)
 		perf_cpu_index = -1;
 	}
 	irq_set_affinity_locked(&desc->irq_data, cpumask_of(cpu), true);
-	put_online_cpus();
 
 	perf_cpu_index = cpu;
 }
