@@ -200,6 +200,7 @@ extern void disable_percpu_irq(unsigned int irq);
 extern void enable_irq(unsigned int irq);
 extern void enable_percpu_irq(unsigned int irq, unsigned int type);
 extern void irq_wake_thread(unsigned int irq, void *dev_id);
+extern void irq_set_perf_affinity(unsigned int irq);
 
 /* The following three functions are for the core kernel use only. */
 extern void suspend_device_irqs(void);
