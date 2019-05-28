@@ -517,7 +517,8 @@ struct synaptics_rmi4_data {
 			bool enable);
 	void (*report_touch)(struct synaptics_rmi4_data *rmi4_data,
 			struct synaptics_rmi4_fn *fhandler);
-	struct pm_qos_request pm_qos_req;
+	struct pm_qos_request pm_i2c_req;
+	struct pm_qos_request pm_touch_req;
 };
 
 struct synaptics_dsx_bus_access {
@@ -557,6 +558,8 @@ void synaptics_rmi4_new_function(struct synaptics_rmi4_exp_fn *exp_fn_module,
 		bool insert);
 
 int synaptics_fw_updater(const unsigned char *fw_data);
+
+unsigned int synaptics_rmi4_i2c_irq(void);
 
 static inline int synaptics_rmi4_reg_read(
 		struct synaptics_rmi4_data *rmi4_data,

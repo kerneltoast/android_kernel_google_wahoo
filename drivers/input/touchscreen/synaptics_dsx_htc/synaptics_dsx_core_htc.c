@@ -2505,9 +2505,11 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 #endif
 
 	/* prevent CPU from entering deep sleep */
-	pm_qos_update_request(&rmi4_data->pm_qos_req, 100);
+	pm_qos_update_request(&rmi4_data->pm_touch_req, 100);
+	pm_qos_update_request(&rmi4_data->pm_i2c_req, 100);
 	synaptics_rmi4_sensor_report(rmi4_data, true);
-	pm_qos_update_request(&rmi4_data->pm_qos_req, PM_QOS_DEFAULT_VALUE);
+	pm_qos_update_request(&rmi4_data->pm_i2c_req, PM_QOS_DEFAULT_VALUE);
+	pm_qos_update_request(&rmi4_data->pm_touch_req, PM_QOS_DEFAULT_VALUE);
 
 exit:
 	return IRQ_HANDLED;
@@ -5544,6 +5546,8 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 	struct synaptics_rmi4_data *rmi4_data;
 	const struct synaptics_dsx_hw_interface *hw_if;
 	const struct synaptics_dsx_board_data *bdata;
+	unsigned int i2c_irq;
+
 	hw_if = pdev->dev.platform_data;
 	if (!hw_if) {
 		dev_err(&pdev->dev,
@@ -5684,7 +5688,17 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 		platform_get_irq_byname(to_platform_device(pdev->dev.parent),
 					"tp_direct_interrupt");
 
-	pm_qos_add_request(&rmi4_data->pm_qos_req, PM_QOS_CPU_DMA_LATENCY,
+	i2c_irq = synaptics_rmi4_i2c_irq();
+	irq_set_perf_affinity(i2c_irq);
+
+	rmi4_data->pm_i2c_req.type = PM_QOS_REQ_AFFINE_IRQ;
+	rmi4_data->pm_i2c_req.irq = i2c_irq;
+	pm_qos_add_request(&rmi4_data->pm_i2c_req, PM_QOS_CPU_DMA_LATENCY,
+			   PM_QOS_DEFAULT_VALUE);
+
+	rmi4_data->pm_touch_req.type = PM_QOS_REQ_AFFINE_IRQ;
+	rmi4_data->pm_touch_req.irq = rmi4_data->irq;
+	pm_qos_add_request(&rmi4_data->pm_touch_req, PM_QOS_CPU_DMA_LATENCY,
 			   PM_QOS_DEFAULT_VALUE);
 
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_CORE_HTC)
@@ -5808,7 +5822,6 @@ err_virtual_buttons:
 	synaptics_rmi4_irq_enable(rmi4_data, false, false);
 
 err_enable_irq:
-	pm_qos_remove_request(&rmi4_data->pm_qos_req);
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_CORE_HTC)
 	free_irq(rmi4_data->irq, rmi4_data);
 err_request_irq:
@@ -5905,7 +5918,6 @@ static int synaptics_rmi4_remove(struct platform_device *pdev)
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_CORE_HTC)
 	free_irq(rmi4_data->irq, rmi4_data);
 #endif
-	pm_qos_remove_request(&rmi4_data->pm_qos_req);
 
 #ifdef CONFIG_FB
 	fb_unregister_client(&rmi4_data->fb_notifier);
