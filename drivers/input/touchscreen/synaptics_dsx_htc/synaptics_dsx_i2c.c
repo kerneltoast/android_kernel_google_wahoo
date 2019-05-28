@@ -40,6 +40,7 @@
 #include <linux/types.h>
 #include <linux/of_gpio.h>
 #include <linux/platform_device.h>
+#include <linux/i2c/i2c-msm-v2.h>
 #include <linux/input/synaptics_dsx_v2_6.h>
 #include "synaptics_dsx_core.h"
 
@@ -745,6 +746,15 @@ static int synaptics_rmi4_i2c_probe(struct i2c_client *client,
 	}
 
 	return 0;
+}
+
+unsigned int synaptics_rmi4_i2c_irq(void)
+{
+	struct i2c_msm_ctrl *ctrl;
+
+	ctrl = synaptics_dsx_i2c_device->dev.parent->parent->driver_data;
+
+	return ctrl->rsrcs.irq;
 }
 
 static int synaptics_rmi4_i2c_remove(struct i2c_client *client)
