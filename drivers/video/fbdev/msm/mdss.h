@@ -23,6 +23,7 @@
 #include <linux/irqdomain.h>
 #include <linux/mdss_io_util.h>
 #include <linux/mdss_smmu_ext.h>
+#include <linux/pm_qos.h>
 
 #include <linux/msm-bus.h>
 #include <linux/file.h>
@@ -553,6 +554,10 @@ struct mdss_data_type {
 	u32 sec_session_cnt;
 	wait_queue_head_t secure_waitq;
 	struct cx_ipeak_client *mdss_cx_ipeak;
+
+	struct pm_qos_request pm_irq_req;
+	struct work_struct pm_unset_work;
+	bool pm_irq_set;
 };
 
 extern struct mdss_data_type *mdss_res;
