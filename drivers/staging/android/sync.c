@@ -313,6 +313,12 @@ int sync_fence_wake_up_wq(wait_queue_t *curr, unsigned mode,
 	return 1;
 }
 
+bool sync_fence_signaled(struct sync_fence *fence)
+{
+	return atomic_read(&fence->status) <= 0;
+}
+EXPORT_SYMBOL(sync_fence_signaled);
+
 int sync_fence_wait_async(struct sync_fence *fence,
 			  struct sync_fence_waiter *waiter)
 {
