@@ -376,15 +376,14 @@ static ssize_t show_autotune(struct device *dev,
 static int fts_check_index(void *device_data)
 {
 	struct fts_ts_info *info = (struct fts_ts_info *)device_data;
-	char buff[CMD_STR_LEN] = { 0 };
 	int node;
 
 	if (info->cmd_param[0] < 0 ||
 	    info->cmd_param[0] >= info->SenseChannelLength ||
 	    info->cmd_param[1] < 0 ||
 	    info->cmd_param[1] >= info->ForceChannelLength) {
-		snprintf(buff, sizeof(buff), "%s", "NG");
-		strncat(info->cmd_result, buff, strnlen(buff, sizeof(buff)));
+		snprintf(info->cmd_result, sizeof(info->cmd_result), "%sNG",
+			 info->cmd_result);
 		info->cmd_state = CMD_STATUS_FAIL;
 		tsp_debug_info(&info->client->dev,
 			"%s: parameter error: %u,%u\n",
