@@ -205,6 +205,8 @@ static int __init vdso_mappings_init(const char *name,
 	if (vdso_pagelist == NULL)
 		return -ENOMEM;
 
+	kmemleak_not_leak(vdso_pagelist);
+
 	/* Grab the vDSO data page. */
 	vdso_pagelist[0] = phys_to_page(__pa_symbol(vdso_data));
 
