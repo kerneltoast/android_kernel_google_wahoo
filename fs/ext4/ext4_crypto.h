@@ -145,6 +145,7 @@ static inline int ext4_encryption_key_size(int mode)
 struct ext4_str {
 	unsigned char *name;
 	u32 len;
+	unsigned char default_name[EXT4_FNAME_CRYPTO_DIGEST_SIZE * 2 + 1];
 };
 
 /**
