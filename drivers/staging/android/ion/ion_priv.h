@@ -84,16 +84,14 @@ struct ion_buffer {
 		void *priv_virt;
 		ion_phys_addr_t priv_phys;
 	};
-	struct mutex lock;
+	struct mutex kmap_lock;
+	struct mutex page_lock;
+	struct mutex vma_lock;
 	int kmap_cnt;
 	void *vaddr;
 	struct sg_table *sg_table;
 	struct page **pages;
 	struct list_head vmas;
-	/* used to track orphaned buffers */
-	int handle_count;
-	char task_comm[TASK_COMM_LEN];
-	pid_t pid;
 };
 void ion_buffer_destroy(struct ion_buffer *buffer);
 
@@ -197,29 +195,7 @@ struct ion_heap {
 	size_t free_list_size;
 	spinlock_t free_lock;
 	wait_queue_head_t waitqueue;
-	struct task_struct *task;
-
-	int (*debug_show)(struct ion_heap *heap, struct seq_file *, void *);
-	atomic_t total_allocated;
-	atomic_t total_handles;
 };
-
-/**
- * ion_buffer_cached - this ion buffer is cached
- * @buffer:		buffer
- *
- * indicates whether this ion buffer is cached
- */
-bool ion_buffer_cached(struct ion_buffer *buffer);
-
-/**
- * ion_buffer_fault_user_mappings - fault in user mappings of this buffer
- * @buffer:		buffer
- *
- * indicates whether userspace mappings of this buffer will be faulted
- * in, this can affect how buffers are allocated from the heap.
- */
-bool ion_buffer_fault_user_mappings(struct ion_buffer *buffer);
 
 /**
  * ion_device_create - allocates and returns an ion device
@@ -433,7 +409,7 @@ struct ion_page_pool {
 	int low_count;
 	struct list_head high_items;
 	struct list_head low_items;
-	struct mutex mutex;
+	spinlock_t lock;
 	struct device *dev;
 	gfp_t gfp_mask;
 	unsigned int order;
@@ -505,34 +481,17 @@ int ion_walk_heaps(struct ion_client *client, int heap_id,
 			enum ion_heap_type type, void *data,
 			int (*f)(struct ion_heap *heap, void *data));
 
-struct ion_handle *ion_handle_get_by_id_nolock(struct ion_client *client,
-					       int id);
+struct ion_handle *ion_handle_find_by_id(struct ion_client *client, int id);
 
-int ion_handle_put(struct ion_handle *handle);
+void ion_handle_put(struct ion_handle *handle);
 
 bool ion_handle_validate(struct ion_client *client, struct ion_handle *handle);
 
-void lock_client(struct ion_client *client);
-
-void unlock_client(struct ion_client *client);
-
 struct ion_buffer *get_buffer(struct ion_handle *handle);
 
-/**
- * This function is same as ion_free() except it won't use client->lock.
- */
-void ion_free_nolock(struct ion_client *client, struct ion_handle *handle);
-
-/**
- * This function is same as ion_phys() except it won't use client->lock.
- */
-int ion_phys_nolock(struct ion_client *client, struct ion_handle *handle,
-		    ion_phys_addr_t *addr, size_t *len);
-
-/**
- * This function is same as ion_import_dma_buf() except it won't use
- * client->lock.
- */
-struct ion_handle *ion_import_dma_buf_nolock(struct ion_client *client, int fd);
+static inline bool ion_buffer_cached(struct ion_buffer *buffer)
+{
+	return buffer->flags & ION_FLAG_CACHED;
+}
 
 #endif /* _ION_PRIV_H */

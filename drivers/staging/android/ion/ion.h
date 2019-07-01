@@ -93,10 +93,8 @@ void ion_reserve(struct ion_platform_data *data);
 /**
  * ion_client_create() -  allocate a client and returns it
  * @dev:		the global ion device
- * @name:		used for debugging
  */
-struct ion_client *ion_client_create(struct ion_device *dev,
-				     const char *name);
+struct ion_client *ion_client_create(struct ion_device *dev);
 
 /**
  * ion_client_destroy() -  free's a client and all it's handles
