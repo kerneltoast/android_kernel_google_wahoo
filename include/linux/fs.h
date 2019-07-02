@@ -31,6 +31,7 @@
 #include <linux/blk_types.h>
 #include <linux/workqueue.h>
 #include <linux/percpu-rwsem.h>
+#include <linux/selinux.h>
 
 #include <asm/byteorder.h>
 #include <uapi/linux/fs.h>
@@ -610,7 +611,9 @@ struct inode {
 	struct address_space	*i_mapping;
 
 #ifdef CONFIG_SECURITY
+#ifndef CONFIG_SECURITY_SELINUX
 	void			*i_security;
+#endif
 #endif
 
 	/* Stat data, not accessed from path walking */
@@ -689,6 +692,13 @@ struct inode {
 #endif
 
 	void			*i_private; /* fs or device private pointer */
+#ifdef CONFIG_SECURITY_SELINUX
+	/*
+	 * This needs to be at the end so its size won't cause the rest of the
+	 * struct to be broken across cachelines, thereby wrecking performance.
+	 */
+	struct inode_security_struct i_security[1];
+#endif
 };
 
 static inline unsigned int i_blocksize(const struct inode *node)
@@ -903,7 +913,9 @@ struct file {
 
 	u64			f_version;
 #ifdef CONFIG_SECURITY
+#ifndef CONFIG_SECURITY_SELINUX
 	void			*f_security;
+#endif
 #endif
 	/* needed for tty driver, and maybe others */
 	void			*private_data;
@@ -914,6 +926,13 @@ struct file {
 	struct list_head	f_tfile_llink;
 #endif /* #ifdef CONFIG_EPOLL */
 	struct address_space	*f_mapping;
+#ifdef CONFIG_SECURITY_SELINUX
+	/*
+	 * This needs to be at the end so its size won't cause the rest of the
+	 * struct to be broken across cachelines, thereby wrecking performance.
+	 */
+	struct file_security_struct f_security[1];
+#endif
 } __attribute__((aligned(4)));	/* lest something weird decides that 2 is OK */
 
 struct file_handle {

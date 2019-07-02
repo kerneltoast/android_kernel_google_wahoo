@@ -205,7 +205,7 @@ static int pfk_ecryptfs_get_page_index(const struct bio *bio,
  */
 static void *pfk_ecryptfs_get_data(const struct inode *inode)
 {
-	struct inode_security_struct *isec = NULL;
+	const struct inode_security_struct *isec = NULL;
 
 	if (!inode)
 		return NULL;
