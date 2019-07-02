@@ -44,3 +44,4 @@ ccflags-y += -I$(srctree)/drivers/media/dvb-core
 ccflags-y += -I$(srctree)/drivers/media/dvb-frontends
 ccflags-y += -I$(srctree)/drivers/media/tuners
 
+CFLAGS_v4l2-ioctl.o += -Wframe-larger-than=8192
