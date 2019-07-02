@@ -23,3 +23,5 @@ quiet_cmd_flask = GEN     $(obj)/flask.h $(obj)/av_permissions.h
 targets += flask.h av_permissions.h
 $(obj)/flask.h: $(src)/include/classmap.h FORCE
 	$(call if_changed,flask)
+
+CFLAGS_hooks.o += -Wframe-larger-than=8192
