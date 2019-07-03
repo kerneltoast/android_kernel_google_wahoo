@@ -79,7 +79,9 @@ void kgsl_dump_syncpoints(struct kgsl_device *device,
 {
 	struct kgsl_drawobj_sync_event *event;
 	unsigned int i;
+#ifdef CONFIG_SYNC_DEBUG
 	unsigned long flags;
+#endif
 
 	for (i = 0; i < syncobj->numsyncs; i++) {
 		event = &syncobj->synclist[i];
@@ -102,6 +104,7 @@ void kgsl_dump_syncpoints(struct kgsl_device *device,
 			break;
 		}
 		case KGSL_CMD_SYNCPOINT_TYPE_FENCE:
+#ifdef CONFIG_SYNC_DEBUG
 			spin_lock_irqsave(&event->handle_lock, flags);
 
 			if (event->handle)
@@ -112,6 +115,7 @@ void kgsl_dump_syncpoints(struct kgsl_device *device,
 				dev_err(device->dev, "  fence: invalid\n");
 
 			spin_unlock_irqrestore(&event->handle_lock, flags);
+#endif
 			break;
 		}
 	}
@@ -156,9 +160,11 @@ static void syncobj_timer(unsigned long data)
 			spin_lock_irqsave(&event->handle_lock, flags);
 
 			if (event->handle != NULL) {
+#ifdef CONFIG_SYNC_DEBUG
 				dev_err(device->dev, "       [%d] FENCE %s\n",
 				i, event->handle->fence ?
 					event->handle->fence->name : "NULL");
+#endif
 				kgsl_sync_fence_log(event->handle->fence);
 			}
 
@@ -349,8 +355,10 @@ static void drawobj_sync_fence_func(void *priv)
 
 	drawobj_sync_expire(event->device, event);
 
+#ifdef CONFIG_SYNC_DEBUG
 	trace_syncpoint_fence_expire(event->syncobj,
 		event->handle ? event->handle->name : "unknown");
+#endif
 
 	spin_lock_irqsave(&event->handle_lock, flags);
 
@@ -402,7 +410,9 @@ static int drawobj_add_sync_fence(struct kgsl_device *device,
 	spin_lock_init(&event->handle_lock);
 	set_bit(event->id, &syncobj->pending);
 
+#ifdef CONFIG_SYNC_DEBUG
 	trace_syncpoint_fence(syncobj, fence->name);
+#endif
 
 	spin_lock_irqsave(&event->handle_lock, flags);
 
@@ -418,6 +428,7 @@ static int drawobj_add_sync_fence(struct kgsl_device *device,
 		clear_bit(event->id, &syncobj->pending);
 
 		drawobj_put(drawobj);
+#ifdef CONFIG_SYNC_DEBUG
 		/*
 		 * Print a syncpoint_fence_expire trace if
 		 * the fence is already signaled or there is
@@ -425,6 +436,7 @@ static int drawobj_add_sync_fence(struct kgsl_device *device,
 		 */
 		trace_syncpoint_fence_expire(syncobj, (ret < 0) ?
 				"error" : fence->name);
+#endif
 	} else {
 		spin_unlock_irqrestore(&event->handle_lock, flags);
 	}
