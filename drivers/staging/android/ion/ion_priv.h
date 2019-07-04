@@ -70,23 +70,17 @@ struct ion_buffer *ion_handle_buffer(struct ion_handle *handle);
  *			handle, used for debugging
 */
 struct ion_buffer {
-	struct kref ref;
-	union {
-		struct rb_node node;
-		struct list_head list;
-	};
+	struct list_head list;
 	struct ion_device *dev;
 	struct ion_heap *heap;
 	unsigned long flags;
 	unsigned long private_flags;
 	size_t size;
-	union {
-		void *priv_virt;
-		ion_phys_addr_t priv_phys;
-	};
+	void *priv_virt;
 	struct mutex kmap_lock;
 	struct mutex page_lock;
 	struct mutex vma_lock;
+	struct kref ref;
 	int kmap_cnt;
 	void *vaddr;
 	struct sg_table *sg_table;

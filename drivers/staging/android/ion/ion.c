@@ -501,14 +501,12 @@ struct sg_table *ion_sg_table(struct ion_client *client,
 			      struct ion_handle *handle)
 {
 	struct ion_buffer *buffer;
-	struct sg_table *table;
 
 	if (!ion_handle_validate(client, handle))
 		return ERR_PTR(-EINVAL);
 
 	buffer = handle->buffer;
-	table = buffer->sg_table;
-	return table;
+	return buffer->sg_table;
 }
 
 static struct scatterlist *ion_sg_alloc(unsigned int nents, gfp_t gfp_mask)
