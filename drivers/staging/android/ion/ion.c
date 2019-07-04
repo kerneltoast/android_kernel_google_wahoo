@@ -508,26 +508,6 @@ struct sg_table *ion_sg_table(struct ion_client *client,
 	return buffer->sg_table;
 }
 
-static struct scatterlist *ion_sg_alloc(unsigned int nents, gfp_t gfp_mask)
-{
-	return vmalloc(nents * sizeof(struct scatterlist));
-}
-
-static void ion_sg_free(struct scatterlist *sg, unsigned int nents)
-{
-	vfree(sg);
-}
-
-static int ion_sg_alloc_table(struct sg_table *table, unsigned int nents)
-{
-	return __sg_alloc_table(table, nents, UINT_MAX, NULL, 0, ion_sg_alloc);
-}
-
-static void ion_sg_free_table(struct sg_table *table)
-{
-	__sg_free_table(table, UINT_MAX, false, ion_sg_free);
-}
-
 static struct sg_table *ion_dupe_sg_table(struct sg_table *orig_table)
 {
 	struct scatterlist *sg, *sg_orig;
@@ -538,7 +518,7 @@ static struct sg_table *ion_dupe_sg_table(struct sg_table *orig_table)
 	if (!table)
 		return NULL;
 
-	ret = ion_sg_alloc_table(table, orig_table->nents);
+	ret = sg_alloc_table(table, orig_table->nents, GFP_KERNEL);
 	if (ret) {
 		kmem_cache_free(ion_sg_table_pool, table);
 		return NULL;
@@ -616,7 +596,7 @@ static void ion_unmap_dma_buf(struct dma_buf_attachment *attachment,
 			      struct sg_table *table,
 			      enum dma_data_direction direction)
 {
-	ion_sg_free_table(table);
+	sg_free_table(table);
 	kmem_cache_free(ion_sg_table_pool, table);
 }
 
