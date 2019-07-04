@@ -48,7 +48,6 @@ struct ion_vma_list {
 };
 
 static struct kmem_cache *ion_sg_table_pool;
-static struct kmem_cache *ion_page_pool;
 
 static bool ion_buffer_fault_user_mappings(struct ion_buffer *buffer)
 {
@@ -511,30 +510,22 @@ struct sg_table *ion_sg_table(struct ion_client *client,
 
 static struct scatterlist *ion_sg_alloc(unsigned int nents, gfp_t gfp_mask)
 {
-	if (nents == SG_MAX_SINGLE_ALLOC)
-		return kmem_cache_alloc(ion_page_pool, gfp_mask);
-
-	return kmalloc(nents * sizeof(struct scatterlist), gfp_mask);
+	return vmalloc(nents * sizeof(struct scatterlist));
 }
 
 static void ion_sg_free(struct scatterlist *sg, unsigned int nents)
 {
-	if (nents == SG_MAX_SINGLE_ALLOC)
-		kmem_cache_free(ion_page_pool, sg);
-	else
-		kfree(sg);
+	vfree(sg);
 }
 
-static int ion_sg_alloc_table(struct sg_table *table, unsigned int nents,
-			      gfp_t gfp_mask)
+static int ion_sg_alloc_table(struct sg_table *table, unsigned int nents)
 {
-	return __sg_alloc_table(table, nents, SG_MAX_SINGLE_ALLOC, NULL,
-				gfp_mask, ion_sg_alloc);
+	return __sg_alloc_table(table, nents, UINT_MAX, NULL, 0, ion_sg_alloc);
 }
 
 static void ion_sg_free_table(struct sg_table *table)
 {
-	__sg_free_table(table, SG_MAX_SINGLE_ALLOC, false, ion_sg_free);
+	__sg_free_table(table, UINT_MAX, false, ion_sg_free);
 }
 
 static struct sg_table *ion_dupe_sg_table(struct sg_table *orig_table)
@@ -547,7 +538,7 @@ static struct sg_table *ion_dupe_sg_table(struct sg_table *orig_table)
 	if (!table)
 		return NULL;
 
-	ret = ion_sg_alloc_table(table, orig_table->nents, GFP_KERNEL);
+	ret = ion_sg_alloc_table(table, orig_table->nents);
 	if (ret) {
 		kmem_cache_free(ion_sg_table_pool, table);
 		return NULL;
@@ -1033,26 +1024,19 @@ struct ion_device *ion_device_create(long (*custom_ioctl)
 	if (!ion_sg_table_pool)
 		goto free_dev;
 
-	ion_page_pool = kmem_cache_create("ion_page", PAGE_SIZE, PAGE_SIZE,
-					  SLAB_HWCACHE_ALIGN, NULL);
-	if (!ion_page_pool)
-		goto free_table_pool;
-
 	dev->dev.minor = MISC_DYNAMIC_MINOR;
 	dev->dev.name = "ion";
 	dev->dev.fops = &ion_fops;
 	dev->dev.parent = NULL;
 	ret = misc_register(&dev->dev);
 	if (ret)
-		goto free_page_pool;
+		goto free_table_pool;
 
 	dev->custom_ioctl = custom_ioctl;
 	init_rwsem(&dev->heap_lock);
 	plist_head_init(&dev->heaps);
 	return dev;
 
-free_page_pool:
-	kmem_cache_destroy(ion_page_pool);
 free_table_pool:
 	kmem_cache_destroy(ion_sg_table_pool);
 free_dev:
