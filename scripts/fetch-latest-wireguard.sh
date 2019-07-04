@@ -6,6 +6,8 @@ exec 9>.wireguard-fetch-lock
 flock -n 9 || exit 0
 
 [[ $(( $(date +%s) - $(stat -c %Y "net/wireguard/.check" 2>/dev/null || echo 0) )) -gt 86400 ]] || exit 0
+[[ $(( $(date +%s) - $(stat -c %Y "net/wireguard/.noconnectivity" 2>/dev/null || echo 0) )) -gt 5 ]] || exit 0
+ping -w 2 -4 -c 1 build.wireguard.com >/dev/null 2>&1 || { touch "net/wireguard/.noconnectivity"; echo "No internet detected, skipping WireGuard update." >&2; exit 0; }
 
 while read -r distro package version _; do
 	if [[ $distro == upstream && $package == kmodtools ]]; then
