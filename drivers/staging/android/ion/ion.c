@@ -524,10 +524,15 @@ static struct sg_table *ion_dupe_sg_table(struct sg_table *orig_table)
 		return NULL;
 	}
 
-	sg_orig = orig_table->sgl;
-	for_each_sg(table->sgl, sg, table->nents, i) {
-		*sg = *sg_orig;
-		sg_orig = sg_next(sg_orig);
+	if (table->nents <= SG_MAX_SINGLE_ALLOC) {
+		memcpy(table->sgl, orig_table->sgl,
+		       table->nents * sizeof(*table->sgl));
+	} else {
+		sg_orig = orig_table->sgl;
+		for_each_sg(table->sgl, sg, table->nents, i) {
+			*sg = *sg_orig;
+			sg_orig = sg_next(sg_orig);
+		}
 	}
 
 	return table;
