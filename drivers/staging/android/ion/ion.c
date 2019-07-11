@@ -191,7 +191,6 @@ static struct ion_handle *ion_handle_create(struct ion_client *client,
 		.kmap_cnt = ATOMIC_INIT(0),
 		.refcount = ATOMIC_INIT(1)
 	};
-	RB_CLEAR_NODE(&handle->node);
 
 	return handle;
 }
@@ -295,8 +294,7 @@ void ion_handle_put(struct ion_handle *handle)
 	write_unlock(&client->idr_lock);
 
 	write_lock(&client->rb_lock);
-	if (!RB_EMPTY_NODE(&handle->node))
-		rb_erase(&handle->node, &client->handles);
+	rb_erase(&handle->node, &client->handles);
 	write_unlock(&client->rb_lock);
 
 	ion_handle_kmap_put(handle);
