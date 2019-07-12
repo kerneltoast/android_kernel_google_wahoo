@@ -154,8 +154,6 @@ free_buffer:
 
 void ion_buffer_destroy(struct ion_buffer *buffer)
 {
-	if (buffer->kmap_cnt > 0)
-		buffer->heap->ops->unmap_kernel(buffer->heap, buffer);
 	buffer->heap->ops->unmap_dma(buffer->heap, buffer);
 	buffer->heap->ops->free(buffer);
 	if (ion_buffer_fault_user_mappings(buffer))
@@ -250,23 +248,9 @@ static void ion_handle_get(struct ion_handle *handle)
 	atomic_inc(&handle->refcount);
 }
 
-bool ion_handle_validate(struct ion_client *client, struct ion_handle *handle)
-{
-	bool found;
-
-	read_lock(&client->idr_lock);
-	found = idr_find(&client->idr, handle->id) == handle;
-	read_unlock(&client->idr_lock);
-
-	return found;
-}
-
 void *ion_map_kernel(struct ion_client *client, struct ion_handle *handle)
 {
 	struct ion_buffer *buffer;
-
-	if (!ion_handle_validate(client, handle))
-		return ERR_PTR(-EINVAL);
 
 	buffer = handle->buffer;
 	if (!buffer->heap->ops->map_kernel)
@@ -277,8 +261,7 @@ void *ion_map_kernel(struct ion_client *client, struct ion_handle *handle)
 
 void ion_unmap_kernel(struct ion_client *client, struct ion_handle *handle)
 {
-	if (ion_handle_validate(client, handle))
-		ion_handle_kmap_put(handle);
+	ion_handle_kmap_put(handle);
 }
 
 void ion_handle_put(struct ion_handle *handle)
@@ -418,19 +401,14 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 
 void ion_free(struct ion_client *client, struct ion_handle *handle)
 {
-	if (ion_handle_validate(client, handle))
-		ion_handle_put(handle);
+	ion_handle_put(handle);
 }
 
 int ion_phys(struct ion_client *client, struct ion_handle *handle,
 	     ion_phys_addr_t *addr, size_t *len)
 {
-	struct ion_buffer *buffer;
+	struct ion_buffer *buffer = handle->buffer;
 
-	if (!ion_handle_validate(client, handle))
-		return -EINVAL;
-
-	buffer = handle->buffer;
 	if (!buffer->heap->ops->phys)
 		return -ENODEV;
 
@@ -473,12 +451,8 @@ void ion_client_destroy(struct ion_client *client)
 int ion_handle_get_flags(struct ion_client *client, struct ion_handle *handle,
 			 unsigned long *flags)
 {
-	struct ion_buffer *buffer;
+	struct ion_buffer *buffer = handle->buffer;
 
-	if (!ion_handle_validate(client, handle))
-		return -EINVAL;
-
-	buffer = handle->buffer;
 	*flags = buffer->flags;
 	return 0;
 }
@@ -486,12 +460,8 @@ int ion_handle_get_flags(struct ion_client *client, struct ion_handle *handle,
 int ion_handle_get_size(struct ion_client *client, struct ion_handle *handle,
 			size_t *size)
 {
-	struct ion_buffer *buffer;
+	struct ion_buffer *buffer = handle->buffer;
 
-	if (!ion_handle_validate(client, handle))
-		return -EINVAL;
-
-	buffer = handle->buffer;
 	*size = buffer->size;
 	return 0;
 }
@@ -499,12 +469,8 @@ int ion_handle_get_size(struct ion_client *client, struct ion_handle *handle,
 struct sg_table *ion_sg_table(struct ion_client *client,
 			      struct ion_handle *handle)
 {
-	struct ion_buffer *buffer;
+	struct ion_buffer *buffer = handle->buffer;
 
-	if (!ion_handle_validate(client, handle))
-		return ERR_PTR(-EINVAL);
-
-	buffer = handle->buffer;
 	return buffer->sg_table;
 }
 
@@ -733,19 +699,14 @@ static const struct dma_buf_ops dma_buf_ops = {
 struct dma_buf *ion_share_dma_buf(struct ion_client *client,
 				  struct ion_handle *handle)
 {
-	DEFINE_DMA_BUF_EXPORT_INFO(exp_info);
-	struct ion_buffer *buffer;
+	struct ion_buffer *buffer = handle->buffer;
+	struct dma_buf_export_info exp_info = {
+		.ops = &dma_buf_ops,
+		.size = buffer->size,
+		.flags = O_RDWR,
+		.priv = buffer
+	};
 	struct dma_buf *dmabuf;
-
-	if (!ion_handle_validate(client, handle))
-		return ERR_PTR(-EINVAL);
-
-	buffer = handle->buffer;
-
-	exp_info.ops = &dma_buf_ops;
-	exp_info.size = buffer->size;
-	exp_info.flags = O_RDWR;
-	exp_info.priv = buffer;
 
 	dmabuf = dma_buf_export(&exp_info);
 	if (!IS_ERR(dmabuf))

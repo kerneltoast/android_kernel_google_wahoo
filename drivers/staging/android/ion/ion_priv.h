@@ -479,8 +479,6 @@ struct ion_handle *ion_handle_find_by_id(struct ion_client *client, int id);
 
 void ion_handle_put(struct ion_handle *handle);
 
-bool ion_handle_validate(struct ion_client *client, struct ion_handle *handle);
-
 struct ion_buffer *get_buffer(struct ion_handle *handle);
 
 static inline bool ion_buffer_cached(struct ion_buffer *buffer)
