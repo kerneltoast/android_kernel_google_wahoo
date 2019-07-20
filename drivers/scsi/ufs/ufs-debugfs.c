@@ -1634,6 +1634,16 @@ void ufsdbg_add_debugfs(struct ufs_hba *hba)
 		goto err_no_root;
 	}
 
+	if (IS_ENABLED(CONFIG_BOARD_MUSKIE) || IS_ENABLED(CONFIG_BOARD_TAIMEN)) {
+		debugfs_create_file("dump_health_desc", S_IRUSR,
+			hba->debugfs_files.debugfs_root, hba,
+			&ufsdbg_dump_health_desc);
+		debugfs_create_file("show_hba", S_IRUSR,
+			hba->debugfs_files.debugfs_root, hba,
+			&ufsdbg_show_hba_fops);
+		return;
+	}
+
 	hba->debugfs_files.stats_folder = debugfs_create_dir("stats",
 					hba->debugfs_files.debugfs_root);
 	if (!hba->debugfs_files.stats_folder) {
@@ -1810,8 +1820,11 @@ err_no_root:
 
 void ufsdbg_remove_debugfs(struct ufs_hba *hba)
 {
+#if defined(CONFIG_BOARD_MUSKIE) || defined(CONFIG_BOARD_TAIMEN)
+	debugfs_remove_recursive(hba->debugfs_files.debugfs_root);
+#else
 	ufshcd_vops_remove_debugfs(hba);
 	debugfs_remove_recursive(hba->debugfs_files.debugfs_root);
 	kfree(hba->ufs_stats.tag_stats);
-
+#endif
 }
