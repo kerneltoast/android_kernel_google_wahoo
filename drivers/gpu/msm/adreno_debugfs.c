@@ -131,7 +131,9 @@ typedef void (*reg_read_fill_t)(struct kgsl_device *device, int i,
 static void sync_event_print(struct seq_file *s,
 		struct kgsl_drawobj_sync_event *sync_event)
 {
+#ifdef CONFIG_SYNC_DEBUG
 	unsigned long flags;
+#endif
 
 	switch (sync_event->type) {
 	case KGSL_CMD_SYNCPOINT_TYPE_TIMESTAMP: {
@@ -140,6 +142,7 @@ static void sync_event_print(struct seq_file *s,
 		break;
 	}
 	case KGSL_CMD_SYNCPOINT_TYPE_FENCE:
+#ifdef CONFIG_SYNC_DEBUG
 		spin_lock_irqsave(&sync_event->handle_lock, flags);
 
 		seq_printf(s, "sync: [%pK] %s", sync_event->handle,
@@ -147,6 +150,7 @@ static void sync_event_print(struct seq_file *s,
 				? sync_event->handle->fence->name : "NULL");
 
 		spin_unlock_irqrestore(&sync_event->handle_lock, flags);
+#endif
 		break;
 	default:
 		seq_printf(s, "sync: type: %d", sync_event->type);

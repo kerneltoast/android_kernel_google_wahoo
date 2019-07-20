@@ -390,7 +390,9 @@ struct kgsl_sync_fence_waiter *kgsl_sync_fence_async_wait(int fd,
 	kwaiter->priv = priv;
 	kwaiter->func = func;
 
+#ifdef CONFIG_SYNC_DEBUG
 	strlcpy(kwaiter->name, fence->name, sizeof(kwaiter->name));
+#endif
 
 	sync_fence_waiter_init((struct sync_fence_waiter *) kwaiter,
 		kgsl_sync_callback);
