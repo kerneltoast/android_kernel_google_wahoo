@@ -497,7 +497,7 @@ static ssize_t sockfs_getxattr(struct dentry *dentry,
 			if (proto_size + 1 > size)
 				goto out;
 
-			strncpy(value, proto_name, proto_size + 1);
+			memcpy(value, proto_name, proto_size + 1);
 		}
 		error = proto_size + 1;
 	}
