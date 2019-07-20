@@ -97,6 +97,21 @@
 
 #include "../../lib/kstrtox.h"
 
+struct task_kill_info {
+	struct task_struct *task;
+	struct work_struct work;
+};
+
+static void proc_kill_task(struct work_struct *work)
+{
+	struct task_kill_info *kinfo = container_of(work, typeof(*kinfo), work);
+	struct task_struct *task = kinfo->task;
+
+	send_sig(SIGKILL, task, 0);
+	put_task_struct(task);
+	kfree(kinfo);
+}
+
 /* NOTE:
  *	Implementing inode permission operations in /proc is almost
  *	certainly an error.  Permission checks need to happen during
@@ -1184,6 +1199,7 @@ static ssize_t oom_score_adj_read(struct file *file, char __user *buf,
 static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
 					size_t count, loff_t *ppos)
 {
+	char task_comm[TASK_COMM_LEN];
 	struct task_struct *task;
 	char buffer[PROC_NUMBUF];
 	unsigned long flags;
@@ -1234,6 +1250,8 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
 	if (has_capability_noaudit(current, CAP_SYS_RESOURCE))
 		task->signal->oom_score_adj_min = (short)oom_score_adj;
 	trace_oom_score_adj_update(task);
+	if (oom_score_adj >= 700)
+		strncpy(task_comm, task->comm, TASK_COMM_LEN);
 
 err_sighand:
 	unlock_task_sighand(task, &flags);
@@ -1241,6 +1259,21 @@ err_task_lock:
 	task_unlock(task);
 	put_task_struct(task);
 out:
+	/* These apps burn through CPU in the background. Don't let them. */
+	if (!err && oom_score_adj >= 700) {
+		if (!strcmp(task_comm, "id.GoogleCamera") ||
+		    !strcmp(task_comm, "ndroid.settings")) {
+			struct task_kill_info *kinfo;
+
+			kinfo = kmalloc(sizeof(*kinfo), GFP_KERNEL);
+			if (kinfo) {
+				get_task_struct(task);
+				kinfo->task = task;
+				INIT_WORK(&kinfo->work, proc_kill_task);
+				schedule_work(&kinfo->work);
+			}
+		}
+	}
 	return err < 0 ? err : count;
 }
 
