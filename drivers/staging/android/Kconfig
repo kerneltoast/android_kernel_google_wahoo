@@ -90,6 +90,13 @@ config ONESHOT_SYNC_USER
 	help
 	  Provide a userspace API for creating oneshot sync objects.
 
+config SYNC_DEBUG
+	bool "Debug software synchronization"
+	default n
+	depends on SYNC
+	---help---
+	  This makes the sync driver keep track of fence names.
+
 source "drivers/staging/android/ion/Kconfig"
 
 endif # if ANDROID
