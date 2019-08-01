@@ -3511,7 +3511,6 @@ static void process_tdls_rx_action_frame(hdd_adapter_t *adapter,
 static bool process_rx_public_action_frame(hdd_adapter_t *adapter,
 					   uint8_t *pb_frames,
 					   hdd_cfg80211_state_t *cfg_state,
-					   enum action_frm_type frm_type,
 					   uint32_t frm_len, uint16_t freq,
 					   int8_t rx_rssi)
 {
@@ -3578,7 +3577,6 @@ void __hdd_indicate_mgmt_frame(hdd_adapter_t *adapter, uint32_t frm_len,
 	uint16_t freq;
 	uint8_t type = 0;
 	uint8_t sub_type = 0;
-	enum action_frm_type frm_type;
 	hdd_cfg80211_state_t *cfg_state;
 	hdd_context_t *hdd_ctx;
 	uint8_t broadcast = 0;
@@ -3653,7 +3651,7 @@ void __hdd_indicate_mgmt_frame(hdd_adapter_t *adapter, uint32_t frm_len,
 		bool processed;
 
 		processed = process_rx_public_action_frame(adapter, pb_frames,
-							   cfg_state, frm_type,
+							   cfg_state,
 							   frm_len, freq,
 							   rx_rssi);
 		if (!processed) {
