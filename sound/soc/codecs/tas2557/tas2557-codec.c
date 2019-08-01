@@ -230,7 +230,7 @@ static int tas2557_codec_resume(struct snd_soc_codec *pCodec)
 	int rs;
 
 	if (pTAS2557->resume)
-		pTAS2557->resume(pTAS2557->dev);
+		rs = pTAS2557->resume(pTAS2557->dev);
 	else
 		rs = 0;
 
