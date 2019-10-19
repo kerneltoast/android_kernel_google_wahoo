@@ -430,11 +430,13 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 		ret = sg_alloc_table(&table_sync, nents_sync, GFP_KERNEL);
 		if (ret)
 			goto err_free_sg;
+		sg_sync = table_sync.sgl;
+	} else {
+		sg_sync = NULL;
 	}
 
 	i = 0;
 	sg = table->sgl;
-	sg_sync = table_sync.sgl;
 
 	/*
 	 * We now have two separate lists. One list contains pages from the
@@ -451,7 +453,8 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 				i = process_info(info, sg, sg_sync, &data, i);
 				free_info(info, info_onstack,
 					  ARRAY_SIZE(info_onstack));
-				sg_sync = sg_next(sg_sync);
+				if (sg_sync)
+					sg_sync = sg_next(sg_sync);
 			} else {
 				i = process_info(tmp_info, sg, 0, 0, i);
 				free_info(tmp_info, info_onstack,
@@ -460,7 +463,8 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 		} else if (info) {
 			i = process_info(info, sg, sg_sync, &data, i);
 			free_info(info, info_onstack, ARRAY_SIZE(info_onstack));
-			sg_sync = sg_next(sg_sync);
+			if (sg_sync)
+				sg_sync = sg_next(sg_sync);
 		} else if (tmp_info) {
 			i = process_info(tmp_info, sg, 0, 0, i);
 			free_info(tmp_info, info_onstack,
