@@ -133,17 +133,5 @@ bool is_secure_vmid_valid(int vmid);
 int ion_system_secure_heap_unassign_sg(struct sg_table *sgt, int source_vmid);
 int ion_system_secure_heap_assign_sg(struct sg_table *sgt, int dest_vmid);
 
-/**
- * ion_create_chunked_sg_table - helper function to create sg table
- * with specified chunk size
- * @buffer_base:	The starting address used for the sg dma address
- * @chunk_size:		The size of each entry in the sg table
- * @total_size:		The total size of the sg table (i.e. the sum of the
- *			entries). This will be rounded up to the nearest
- *			multiple of `chunk_size'
- */
-struct sg_table *ion_create_chunked_sg_table(phys_addr_t buffer_base,
-					size_t chunk_size, size_t total_size);
-
 void show_ion_usage(struct ion_device *dev);
 #endif /* _MSM_ION_PRIV_H */

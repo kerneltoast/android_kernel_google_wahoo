@@ -30,7 +30,7 @@ struct ion_chunk_heap {
 	ion_phys_addr_t base;
 	unsigned long chunk_size;
 	unsigned long size;
-	unsigned long allocated;
+	atomic_long_t allocated;
 };
 
 static int ion_chunk_heap_allocate(struct ion_heap *heap,
@@ -52,7 +52,8 @@ static int ion_chunk_heap_allocate(struct ion_heap *heap,
 	allocated_size = ALIGN(size, chunk_heap->chunk_size);
 	num_chunks = allocated_size / chunk_heap->chunk_size;
 
-	if (allocated_size > chunk_heap->size - chunk_heap->allocated)
+	if (allocated_size >
+	    chunk_heap->size - atomic_long_read(&chunk_heap->allocated))
 		return -ENOMEM;
 
 	table = kmalloc(sizeof(struct sg_table), GFP_KERNEL);
@@ -76,7 +77,7 @@ static int ion_chunk_heap_allocate(struct ion_heap *heap,
 	}
 
 	buffer->priv_virt = table;
-	chunk_heap->allocated += allocated_size;
+	atomic_long_add(allocated_size, &chunk_heap->allocated);
 	return 0;
 err:
 	sg = table->sgl;
@@ -113,7 +114,7 @@ static void ion_chunk_heap_free(struct ion_buffer *buffer)
 		gen_pool_free(chunk_heap->pool, page_to_phys(sg_page(sg)),
 			      sg->length);
 	}
-	chunk_heap->allocated -= allocated_size;
+	atomic_long_sub(allocated_size, &chunk_heap->allocated);
 	sg_free_table(table);
 	kfree(table);
 }
@@ -169,7 +170,6 @@ struct ion_heap *ion_chunk_heap_create(struct ion_platform_heap *heap_data)
 	}
 	chunk_heap->base = heap_data->base;
 	chunk_heap->size = heap_data->size;
-	chunk_heap->allocated = 0;
 
 	gen_pool_add(chunk_heap->pool, chunk_heap->base, heap_data->size, -1);
 	chunk_heap->heap.ops = &chunk_heap_ops;
