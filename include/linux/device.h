@@ -851,6 +851,9 @@ struct device {
 
 	bool			offline_disabled:1;
 	bool			offline:1;
+
+	struct list_head	iommu_map_list;
+	struct mutex		iommu_map_lock;
 };
 
 static inline struct device *kobj_to_dev(struct kobject *kobj)
