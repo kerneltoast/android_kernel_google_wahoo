@@ -282,31 +282,37 @@ static struct dentry *__sdcardfs_lookup(struct dentry *dentry,
 	if (err == -ENOENT) {
 		struct file *file;
 		const struct cred *cred = current_cred();
-		char name_onstack[PATH_MAX] __aligned(sizeof(long));
 
 		struct sdcardfs_name_data buffer = {
 			.ctx.actor = sdcardfs_name_match,
 			.to_find = name,
-			.name = name_onstack,
+			.name = __getname(),
 			.found = false,
 		};
 
+		if (!buffer.name) {
+			err = -ENOMEM;
+			goto out;
+		}
 		file = dentry_open(lower_parent_path, O_RDONLY, cred);
 		if (IS_ERR(file)) {
 			err = PTR_ERR(file);
-		} else {
-			err = iterate_dir(file, &buffer.ctx);
-			fput(file);
-			if (!err) {
-				if (buffer.found)
-					err = vfs_path_lookup(lower_dir_dentry,
-								lower_dir_mnt,
-								buffer.name, 0,
-								&lower_path);
-				else
-					err = -ENOENT;
-			}
+			goto put_name;
 		}
+		err = iterate_dir(file, &buffer.ctx);
+		fput(file);
+		if (err)
+			goto put_name;
+
+		if (buffer.found)
+			err = vfs_path_lookup(lower_dir_dentry,
+						lower_dir_mnt,
+						buffer.name, 0,
+						&lower_path);
+		else
+			err = -ENOENT;
+put_name:
+		__putname(buffer.name);
 	}
 
 	/* no error: handle positive dentries */
