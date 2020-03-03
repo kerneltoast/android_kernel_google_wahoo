@@ -43,8 +43,6 @@ DEFINE_MUTEX(htc_battery_lock);
 static int charge_stop_level = DEFAULT_CHARGE_STOP_LEVEL;
 static int charge_start_level = DEFAULT_CHARGE_START_LEVEL;
 
-#define BATT_LOG(x...) pr_info("[BATT] " x)
-
 #define BATT_DEBUG(x...) do { \
 		if (g_flag_enable_batt_debug_log) \
 			pr_info("[BATT] " x); \
@@ -298,23 +296,23 @@ static int is_bounding_fully_charged_level(void)
 			lowerbd = 0;
 
 		if (s_pingpong == 1 && upperbd <= current_level) {
-			BATT_LOG(
+			BATT_DEBUG(
 				"%s: lowerbd=%d, upperbd=%d, current=%d, pingpong:1->0 turn off\n",
 				__func__, lowerbd, upperbd, current_level);
 			is_batt_chg_off_by_bounding = 1;
 			s_pingpong = 0;
 		} else if (s_pingpong == 0 && lowerbd < current_level) {
-			BATT_LOG(
+			BATT_DEBUG(
 				"%s: lowerbd=%d, upperbd=%d, current=%d, toward 0, turn off\n",
 				__func__, lowerbd, upperbd, current_level);
 			is_batt_chg_off_by_bounding = 1;
 		} else if (s_pingpong == 0 && current_level <= lowerbd) {
-			BATT_LOG(
+			BATT_DEBUG(
 				"%s: lowerbd=%d, upperbd=%d, current=%d, pingpong:0->1 turn on\n",
 				__func__, lowerbd, upperbd, current_level);
 			s_pingpong = 1;
 		} else {
-			BATT_LOG(
+			BATT_DEBUG(
 				"%s: lowerbd=%d, upperbd=%d, current=%d, toward %d, turn on\n",
 				__func__, lowerbd, upperbd, current_level,
 				s_pingpong);
@@ -469,7 +467,7 @@ static int update_ibat_setting(void)
 		get_property(
 			htc_batt_info.batt_psy,
 			POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX)) {
-		BATT_LOG(
+		BATT_DEBUG(
 			"%s: thermal=%d,temp=%d,fcc=%d,is_vol_limited(>%dmV)=%d,is_screen_on=%d,idx=%d,ibat_ma=%d.\n",
 			__func__, batt_thermal, batt_temp,
 			htc_batt_info.batt_fcc_ma,
@@ -510,7 +508,7 @@ static int fb_notifier_callback(struct notifier_block *self,
 		switch (*blank) {
 		case FB_BLANK_UNBLANK:
 			htc_batt_info.state &= ~STATE_SCREEN_OFF;
-			BATT_LOG("%s-> display is On", __func__);
+			BATT_DEBUG("%s-> display is On", __func__);
 			htc_batt_schedule_batt_info_update();
 			break;
 		case FB_BLANK_POWERDOWN:
@@ -518,7 +516,7 @@ static int fb_notifier_callback(struct notifier_block *self,
 		case FB_BLANK_VSYNC_SUSPEND:
 		case FB_BLANK_NORMAL:
 			htc_batt_info.state |= STATE_SCREEN_OFF;
-			BATT_LOG("%s-> display is Off", __func__);
+			BATT_DEBUG("%s-> display is Off", __func__);
 			htc_batt_schedule_batt_info_update();
 			break;
 		}
@@ -671,18 +669,18 @@ static void batt_worker(struct work_struct *work)
 		      htc_batt_info.rep.batt_vol,
 		      htc_batt_info.rep.batt_temp,
 		      (htc_batt_info.rep.batt_current / 1000));
-	BATT_LOG(" chg_name=%s, chg_src=%d, chg_en=%d, health=%d\n",
+	BATT_DEBUG(" chg_name=%s, chg_src=%d, chg_en=%d, health=%d\n",
 		 g_chr_src[htc_batt_info.rep.charging_source],
 		 htc_batt_info.rep.chg_src,
 		 htc_batt_info.rep.chg_en,
 		 htc_batt_info.rep.health);
-	BATT_LOG(" vbus(mV)=%d, MAX_IUSB(mA)=%d, MAX_PD_IUSB(mA)=%d\n",
+	BATT_DEBUG(" vbus(mV)=%d, MAX_IUSB(mA)=%d, MAX_PD_IUSB(mA)=%d\n",
 		 (htc_batt_info.vbus / 1000),
 		 get_property(htc_batt_info.usb_psy,
 			      POWER_SUPPLY_PROP_CURRENT_MAX) / 1000,
 		 get_property(htc_batt_info.usb_psy,
 			      POWER_SUPPLY_PROP_PD_CURRENT_MAX) / 1000);
-	BATT_LOG(" MAX_IBAT(mA)=%d, iusb_now(mA)=%d, AICL=%d\n",
+	BATT_DEBUG(" MAX_IBAT(mA)=%d, iusb_now(mA)=%d, AICL=%d\n",
 		 get_property(
 			htc_batt_info.batt_psy,
 			POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX) / 1000,
@@ -690,18 +688,18 @@ static void batt_worker(struct work_struct *work)
 			      POWER_SUPPLY_PROP_INPUT_CURRENT_NOW) / 1000,
 		 get_property(htc_batt_info.usb_psy,
 			      POWER_SUPPLY_PROP_INPUT_CURRENT_SETTLED) / 1000);
-	BATT_LOG(" batt_id(Kohms)=%d, status=%d, pwrsrc_dis_reason=%d\n",
+	BATT_DEBUG(" batt_id(Kohms)=%d, status=%d, pwrsrc_dis_reason=%d\n",
 		 get_property(htc_batt_info.bms_psy,
 			      POWER_SUPPLY_PROP_RESISTANCE_ID) / 1000,
 		 htc_batt_info.rep.status,
 		 g_pwrsrc_dis_reason);
-	BATT_LOG(" chg_dis_reason=%d, batt_state=%d, charger_temp=%d\n",
+	BATT_DEBUG(" chg_dis_reason=%d, batt_state=%d, charger_temp=%d\n",
 		 g_chg_dis_reason,
 		 htc_batt_info.state,
 		 htc_batt_info.rep.chg_src ?
 		 get_property(htc_batt_info.batt_psy,
 			      POWER_SUPPLY_PROP_CHARGER_TEMP) : -1);
-	BATT_LOG(" CC_uAh=%d, otg=%d\n",
+	BATT_DEBUG(" CC_uAh=%d, otg=%d\n",
 		 get_property(htc_batt_info.bms_psy,
 			      POWER_SUPPLY_PROP_CHARGE_NOW_RAW),
 		 get_property(htc_batt_info.usb_psy,
@@ -723,7 +721,7 @@ static void batt_worker(struct work_struct *work)
 			gpio_direction_output(htc_batt_info.v_elvdd_dis_en, 0);
 		}
 	}
-	BATT_LOG(" v_elvdd_dis_en=%d\n",
+	BATT_DEBUG(" v_elvdd_dis_en=%d\n",
 		 gpio_get_value(htc_batt_info.v_elvdd_dis_en));
 
 	mutex_unlock(&htc_battery_lock);
@@ -922,12 +920,12 @@ static int htc_battery_probe_process(void)
 			POWER_SUPPLY_PROP_RESISTANCE_ID) / 1000;
 	node = of_find_node_by_name(NULL, "qcom,battery-data");
 	if (!node) {
-		BATT_LOG("%s: No batterydata available\n", __func__);
+		BATT_DEBUG("%s: No batterydata available\n", __func__);
 	} else {
 		profile_node = of_batterydata_get_best_profile(
 					node, id_kohms, NULL);
 		if (!profile_node) {
-			BATT_LOG(
+			BATT_DEBUG(
 				"%s: couldn't find profile handle\n",
 				__func__);
 		} else {
@@ -936,7 +934,7 @@ static int htc_battery_probe_process(void)
 					"htc,fastchg-current-ma",
 					&htc_batt_info.batt_fcc_ma);
 			if (rc < 0) {
-				BATT_LOG(
+				BATT_DEBUG(
 					"%s: error reading htc,fastchg-current-ma. %d\n",
 					__func__, rc);
 				htc_batt_info.batt_fcc_ma = 2600;
@@ -947,7 +945,7 @@ static int htc_battery_probe_process(void)
 					"qcom,nom-batt-capacity-mah",
 					&htc_batt_info.batt_capacity_mah);
 			if (rc < 0) {
-				BATT_LOG(
+				BATT_DEBUG(
 					"%s: error reading qcom,nom-batt-capacity-mah. %d\n",
 					__func__, rc);
 				htc_batt_info.batt_capacity_mah = 2600;
@@ -961,36 +959,36 @@ static int htc_battery_probe_process(void)
 					"qcom,batt-thermal-limit-vol",
 					&htc_batt_info.batt_thermal_limit_vol);
 			if (rc < 0) {
-				BATT_LOG(
+				BATT_DEBUG(
 					"%s: error reading qcom,batt-thermal-limit-vol. %d\n",
 					__func__, rc);
 				htc_batt_info.batt_thermal_limit_vol = 4200;
 			}
 		}
 	}
-	BATT_LOG("%s: catch name %s, set batt id=%d, fcc_ma=%d, capacity=%d\n",
+	BATT_DEBUG("%s: catch name %s, set batt id=%d, fcc_ma=%d, capacity=%d\n",
 		 __func__, ret.strval, htc_batt_info.rep.batt_id,
 		 htc_batt_info.batt_fcc_ma, htc_batt_info.batt_capacity_mah);
 
 	/* WA for display flickering */
 	node = of_find_node_by_name(NULL, "htc,battery-node");
 	if (!node) {
-		BATT_LOG("%s: No htc,battery-node available\n", __func__);
+		BATT_DEBUG("%s: No htc,battery-node available\n", __func__);
 	} else {
 		htc_batt_info.v_elvdd_dis_en =
 			of_get_named_gpio(node, "htc,v-elvdd-dis-en", 0);
 		if (!gpio_is_valid(htc_batt_info.v_elvdd_dis_en)) {
-			BATT_LOG(
+			BATT_DEBUG(
 				"%s: error to reading htc,v-elvdd-dis-en.\n",
 				__func__);
 			htc_batt_info.v_elvdd_dis_en = 0;
 		} else {
-			BATT_LOG("%s: htc,v-elvdd-dis-en = %d\n",
+			BATT_DEBUG("%s: htc,v-elvdd-dis-en = %d\n",
 				 __func__, htc_batt_info.v_elvdd_dis_en);
 			rc = gpio_request(htc_batt_info.v_elvdd_dis_en,
 					  "V_ELVDD_DIS_EN");
 			if (rc < 0) {
-				BATT_LOG(
+				BATT_DEBUG(
 					"%s: fail to request V_ELVDD_DIS_EN, rc=%dn",
 					__func__, rc);
 			} else {
@@ -1000,7 +998,7 @@ static int htc_battery_probe_process(void)
 		}
 	}
 
-	BATT_LOG("Probe process done.\n");
+	BATT_DEBUG("Probe process done.\n");
 
 	return 0;
 }
@@ -1023,7 +1021,7 @@ static int htc_battery_fb_register(void)
 {
 	int rc = 0;
 
-	BATT_LOG("%s in", __func__);
+	BATT_DEBUG("%s in", __func__);
 	htc_batt_info.fb_notif.notifier_call = fb_notifier_callback;
 	rc = fb_register_client(&htc_batt_info.fb_notif);
 	if (rc < 0) {
@@ -1048,7 +1046,7 @@ static int htc_battery_probe(struct platform_device *pdev)
 	setup_timer(&htc_batt_timer.batt_timer, batt_regular_timer_handler, 0);
 	htc_batt_timer.batt_wq = create_singlethread_workqueue("batt_timer");
 	if (!htc_batt_timer.batt_wq) {
-		BATT_LOG("%s: create_singlethread_workqueue failed.\n",
+		BATT_ERR("%s: create_singlethread_workqueue failed.\n",
 			 __func__);
 		goto err_unlock;
 	}
@@ -1058,13 +1056,13 @@ static int htc_battery_probe(struct platform_device *pdev)
 	htc_batt_info.htc_batt_cb.notifier_call = htc_notifier_batt_callback;
 	rc = power_supply_reg_notifier(&htc_batt_info.htc_batt_cb);
 	if (rc  < 0) {
-		BATT_LOG("%s: power_supply_reg_notifier failed.\n", __func__);
+		BATT_ERR("%s: power_supply_reg_notifier failed.\n", __func__);
 		goto err_destroy_workqueue;
 	}
 
 	rc = htc_battery_fb_register();
 	if (rc  < 0) {
-		BATT_LOG("%s: htc_battery_fb_register failed.\n", __func__);
+		BATT_ERR("%s: htc_battery_fb_register failed.\n", __func__);
 		goto err_power_supply_unreg_notifier;
 	}
 
@@ -1132,17 +1130,17 @@ static int __init htc_battery_init(void)
 
 	ret = platform_device_register(&htc_battery_pdev);
 	if (ret < 0) {
-		BATT_LOG("%s: device registration failed.\n", __func__);
+		BATT_DEBUG("%s: device registration failed.\n", __func__);
 		return ret;
 	}
 
 	ret = platform_driver_register(&htc_battery_driver);
 	if (ret < 0) {
-		BATT_LOG("%s: driver registration failed.\n", __func__);
+		BATT_DEBUG("%s: driver registration failed.\n", __func__);
 		return ret;
 	}
 
-	BATT_LOG("%s done.\n", __func__);
+	BATT_DEBUG("%s done.\n", __func__);
 
 	return 0;
 }
@@ -1151,7 +1149,7 @@ static void __exit htc_battery_exit(void)
 {
 	platform_device_unregister(&htc_battery_pdev);
 	platform_driver_unregister(&htc_battery_driver);
-	BATT_LOG("%s done.\n", __func__);
+	BATT_DEBUG("%s done.\n", __func__);
 }
 
 module_init(htc_battery_init);

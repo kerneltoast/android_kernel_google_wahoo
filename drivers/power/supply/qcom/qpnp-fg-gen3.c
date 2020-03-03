@@ -736,7 +736,7 @@ static int fg_get_battery_temp(struct fg_chip *chip, int *val)
 		temp = calc_tuned_temp(chip, temp);
 
 		if (ori_temp / 10 != temp / 10) {
-			pr_info("batt temperature original:%d, tuned:%d\n",
+			pr_debug("batt temperature original:%d, tuned:%d\n",
 				ori_temp, temp);
 		}
 	}

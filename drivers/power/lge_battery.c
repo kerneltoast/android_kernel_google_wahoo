@@ -157,7 +157,7 @@ static struct bm_batt_id_table valid_batt_id[BM_BATT_MAX] = {
 	{  44800,  67200,  2,  TOCAD_step_table},
 };
 
-static int debug_mask = ERROR | INTERRUPT | MISC | VERBOSE;
+static int debug_mask = ERROR | INTERRUPT | MISC;
 static int demo_mode;
 static int charge_stop_level = DEFAULT_CHARGE_STOP_LEVEL;
 static int charge_start_level = DEFAULT_CHARGE_START_LEVEL;
