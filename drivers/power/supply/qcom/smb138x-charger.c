@@ -629,7 +629,7 @@ static int smb138x_parallel_get_prop(struct power_supply *psy,
 		val->intval = 0;
 		break;
 	default:
-		pr_err("parallel power supply get prop %d not supported\n",
+		pr_debug("parallel power supply get prop %d not supported\n",
 			prop);
 		return -EINVAL;
 	}
