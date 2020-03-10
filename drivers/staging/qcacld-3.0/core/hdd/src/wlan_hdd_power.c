@@ -2029,7 +2029,8 @@ next_adapter:
 	while (pAdapterNode && QDF_IS_STATUS_SUCCESS(status)) {
 		pAdapter = pAdapterNode->pAdapter;
 
-		sme_ps_timer_flush_sync(pHddCtx->hHal, pAdapter->sessionId);
+		if (!wlan_hdd_validate_session_id(pAdapter->sessionId))
+			sme_ps_timer_flush_sync(pHddCtx->hHal, pAdapter->sessionId);
 
 		status = hdd_get_next_adapter(pHddCtx, pAdapterNode,
 					      &pAdapterNode);
