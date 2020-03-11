@@ -30,13 +30,13 @@ extern const struct cpu_operations cpu_psci_ops;
 
 const struct cpu_operations *cpu_ops[NR_CPUS];
 
-static const struct cpu_operations *dt_supported_cpu_ops[] __initconst = {
+static const struct cpu_operations *const dt_supported_cpu_ops[] __initconst = {
 	&smp_spin_table_ops,
 	&cpu_psci_ops,
 	NULL,
 };
 
-static const struct cpu_operations *acpi_supported_cpu_ops[] __initconst = {
+static const struct cpu_operations *const acpi_supported_cpu_ops[] __initconst = {
 #ifdef CONFIG_ARM64_ACPI_PARKING_PROTOCOL
 	&acpi_parking_protocol_ops,
 #endif
@@ -46,15 +46,18 @@ static const struct cpu_operations *acpi_supported_cpu_ops[] __initconst = {
 
 static const struct cpu_operations * __init cpu_get_ops(const char *name)
 {
-	const struct cpu_operations **ops;
+	int i;
 
-	ops = acpi_disabled ? dt_supported_cpu_ops : acpi_supported_cpu_ops;
-
-	while (*ops) {
-		if (!strcmp(name, (*ops)->name))
-			return *ops;
-
-		ops++;
+	if (acpi_disabled) {
+		for (i = 0; i < ARRAY_SIZE(dt_supported_cpu_ops); i++) {
+			if (!strcmp(name, dt_supported_cpu_ops[i]->name))
+				return dt_supported_cpu_ops[i];
+		}
+	} else {
+		for (i = 0; i < ARRAY_SIZE(acpi_supported_cpu_ops); i++) {
+			if (!strcmp(name, acpi_supported_cpu_ops[i]->name))
+				return acpi_supported_cpu_ops[i];
+		}
 	}
 
 	return NULL;
