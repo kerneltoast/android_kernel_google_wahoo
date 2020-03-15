@@ -64,6 +64,9 @@ ifeq ($(cc-name),clang)
 KBUILD_CFLAGS	+= -mno-implicit-float
 else
 KBUILD_CFLAGS	+= -mgeneral-regs-only
+ifeq ($(CONFIG_ARCH_MSM8998), y)
+KBUILD_CFLAGS	+= -mcpu=cortex-a73.cortex-a53
+endif
 endif
 KBUILD_CFLAGS	+= $(lseinstr) $(vdso32)
 KBUILD_CFLAGS	+= -fno-pic
