@@ -3142,7 +3142,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
 	unsigned long did_some_progress;
 	enum migrate_mode migration_mode = MIGRATE_ASYNC;
 	bool deferred_compaction = false;
-	int contended_compaction = COMPACT_CONTENDED_NONE;
+	int i, contended_compaction = COMPACT_CONTENDED_NONE;
 	pg_data_t *pgdat = ac->preferred_zone->zone_pgdat;
 	bool woke_kswapd = false;
 
@@ -3325,12 +3325,15 @@ noretry:
 	 * direct reclaim and reclaim/compaction depends on compaction
 	 * being called after reclaim so call directly if necessary
 	 */
-	page = __alloc_pages_direct_compact(gfp_mask, order, alloc_flags,
-					    ac, migration_mode,
-					    &contended_compaction,
-					    &deferred_compaction);
-	if (page)
-		goto got_pg;
+	for (i = order ? 4 : 0; i > 0; i--) {
+		page = __alloc_pages_direct_compact(gfp_mask, order,
+						    alloc_flags, ac,
+						    migration_mode,
+						    &contended_compaction,
+						    &deferred_compaction);
+		if (page)
+			goto got_pg;
+	}
 nopage:
 got_pg:
 	if (woke_kswapd)
