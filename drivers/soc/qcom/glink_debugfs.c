@@ -452,7 +452,7 @@ static void glink_dfs_create_channel_list(struct seq_file *s)
 	seq_puts(s,
 		"-------------------------------------------------------------------------------\n");
 	glink_xprt_ctx_iterator_init(&xprt_iter);
-	xprt_ctx = glink_xprt_ctx_iterator_next(&xprt_iter);
+	xprt_ctx = xprt_iter.i_curr;
 
 	while (xprt_ctx != NULL) {
 		glink_ch_ctx_iterator_init(&ch_iter, xprt_ctx);
@@ -511,7 +511,7 @@ static void glink_dfs_create_xprt_list(struct seq_file *s)
 	seq_puts(s,
 		"-------------------------------------------------------------------------------\n");
 	glink_xprt_ctx_iterator_init(&xprt_iter);
-	xprt_ctx = glink_xprt_ctx_iterator_next(&xprt_iter);
+	xprt_ctx = xprt_iter.i_curr;
 
 	while (xprt_ctx != NULL) {
 		count++;
