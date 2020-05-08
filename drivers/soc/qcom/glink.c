@@ -5819,7 +5819,7 @@ void glink_xprt_ctx_iterator_init(struct xprt_ctx_iterator *xprt_i)
 
 	mutex_lock(&transport_list_lock_lha0);
 	xprt_i->xprt_list = &transport_list;
-	xprt_i->i_curr = list_entry(&transport_list,
+	xprt_i->i_curr = list_first_entry_or_null(&transport_list,
 			struct glink_core_xprt_ctx, list_node);
 }
 EXPORT_SYMBOL(glink_xprt_ctx_iterator_init);
