@@ -1057,7 +1057,10 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
 	 * Fetch the current sample and update the timer's expiry time.
 	 */
 	if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
-		cpu_clock_sample(timer->it_clock, p, &now);
+		if (unlikely(cpu_clock_sample(timer->it_clock, p, &now))) {
+			timer->it.cpu.expires = 0;
+			goto out;
+		}
 		bump_cpu_timer(timer, now);
 		if (unlikely(p->exit_state))
 			goto out;
