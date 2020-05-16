@@ -1,0 +1,30 @@
+// Copyright 2016 The Android Open Source Project
+
+cc_binary_host {
+    name: "dtc",
+
+    cflags: [
+        "-Wall",
+        "-Werror",
+        "-Wno-sign-compare",
+        "-Wno-missing-field-initializers",
+        "-Wno-unused-parameter",
+    ],
+    srcs: [
+        "checks.c",
+        "data.c",
+        "dtc.c",
+        "dtc-lexer.l",
+        "dtc-parser.y",
+        "flattree.c",
+        "fstree.c",
+        "livetree.c",
+        "srcpos.c",
+        "treesource.c",
+        "util.c",
+    ],
+
+    static_libs: ["libfdt"],
+
+    stl: "none",
+}
