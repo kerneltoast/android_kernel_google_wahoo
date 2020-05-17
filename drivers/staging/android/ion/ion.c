@@ -22,9 +22,9 @@ struct ion_device {
 struct ion_client {
 	struct ion_device *idev;
 	struct idr handle_idr;
-	struct rb_root handle_root;
-	rwlock_t idr_lock;
-	rwlock_t rb_lock;
+	struct latch_tree_root handle_root;
+	spinlock_t idr_lock;
+	spinlock_t rb_lock;
 };
 
 static void ion_buffer_free_work(struct work_struct *work)
@@ -119,16 +119,15 @@ static struct ion_handle *ion_handle_create(struct ion_client *client,
 	};
 
 	idr_preload(GFP_KERNEL);
-	write_lock(&client->idr_lock);
+	spin_lock(&client->idr_lock);
 	handle->id = idr_alloc(&client->handle_idr, handle, 1, 0, GFP_ATOMIC);
-	write_unlock(&client->idr_lock);
+	spin_unlock(&client->idr_lock);
 	idr_preload_end();
 	if (handle->id < 0) {
 		kfree(handle);
 		return ERR_PTR(-ENOMEM);
 	}
 
-	RB_CLEAR_NODE(&handle->rnode);
 	return handle;
 }
 
@@ -136,22 +135,18 @@ void ion_handle_put(struct ion_handle *handle, int count)
 {
 	struct ion_buffer *buffer = handle->buffer;
 	struct ion_client *client = handle->client;
-	bool do_free;
 
-	write_lock(&client->rb_lock);
-	write_lock(&client->idr_lock);
-	do_free = !atomic_sub_return(count, &handle->refcount);
-	if (do_free) {
+	if (!atomic_sub_return(count, &handle->refcount)) {
+		spin_lock(&client->idr_lock);
 		idr_remove(&client->handle_idr, handle->id);
-		if (!RB_EMPTY_NODE(&handle->rnode))
-			rb_erase(&handle->rnode, &client->handle_root);
-	}
-	write_unlock(&client->idr_lock);
-	write_unlock(&client->rb_lock);
+		spin_unlock(&client->idr_lock);
 
-	if (do_free) {
+		spin_lock(&client->rb_lock);
+		latch_tree_erase(&handle->rnode, &client->handle_root, NULL);
+		spin_unlock(&client->rb_lock);
+
 		ion_buffer_put(buffer);
-		kfree(handle);
+		kfree_rcu(handle, rcu);
 	}
 }
 
@@ -382,61 +377,71 @@ struct ion_buffer *__ion_import_dma_buf(int fd)
 
 struct ion_handle *ion_handle_get_by_id(struct ion_client *client, int id)
 {
-	struct ion_handle *handle;
+	struct ion_handle *handle, *ret = ERR_PTR(-EINVAL);
 
-	read_lock(&client->idr_lock);
+	rcu_read_lock();
 	handle = idr_find(&client->handle_idr, id);
-	if (handle)
-		atomic_inc(&handle->refcount);
-	read_unlock(&client->idr_lock);
+	if (handle) {
+		if (atomic_inc_not_zero(&handle->refcount))
+			ret = handle;
+	}
+	rcu_read_unlock();
 
-	return handle ? handle : ERR_PTR(-EINVAL);
+	return ret;
 }
+
+static __always_inline bool
+ion_tree_less(struct latch_tree_node *a, struct latch_tree_node *b)
+{
+	struct ion_handle *a_handle = container_of(a, typeof(*a_handle), rnode);
+	struct ion_handle *b_handle = container_of(b, typeof(*b_handle), rnode);
+
+	return a_handle->buffer < b_handle->buffer;
+}
+
+static __always_inline int
+ion_tree_comp(void *key, struct latch_tree_node *n)
+{
+	struct ion_handle *handle = container_of(n, typeof(*handle), rnode);
+
+	if ((struct ion_buffer *)key < handle->buffer)
+		return -1;
+
+	if ((struct ion_buffer *)key > handle->buffer)
+		return 1;
+
+	return 0;
+}
+
+static const struct latch_tree_ops ion_tree_ops = {
+	.less = ion_tree_less,
+	.comp = ion_tree_comp
+};
 
 static void ion_handle_rb_add(struct ion_client *client,
 			      struct ion_handle *handle)
 {
-	struct rb_node **p = &client->handle_root.rb_node;
-	struct ion_buffer *buffer = handle->buffer;
-	struct rb_node *parent = NULL;
-	struct ion_handle *entry;
-
-	write_lock(&client->rb_lock);
-	while (*p) {
-		parent = *p;
-		entry = rb_entry(parent, typeof(*entry), rnode);
-		if (buffer < entry->buffer)
-			p = &(*p)->rb_left;
-		else
-			p = &(*p)->rb_right;
-	}
-	rb_link_node(&handle->rnode, parent, p);
-	rb_insert_color(&handle->rnode, &client->handle_root);
-	write_unlock(&client->rb_lock);
+	spin_lock(&client->rb_lock);
+	latch_tree_insert(&handle->rnode, &client->handle_root, &ion_tree_ops);
+	spin_unlock(&client->rb_lock);
 }
 
 static struct ion_handle *ion_handle_get_by_buffer(struct ion_client *client,
 						   struct ion_buffer *buffer)
 {
-	struct rb_node **p = &client->handle_root.rb_node;
-	struct ion_handle *entry;
+	struct ion_handle *handle, *ret = ERR_PTR(-EINVAL);
+	struct latch_tree_node *entry;
 
-	read_lock(&client->rb_lock);
-	while (*p) {
-		entry = rb_entry(*p, typeof(*entry), rnode);
-		if (buffer < entry->buffer) {
-			p = &(*p)->rb_left;
-		} else if (buffer > entry->buffer) {
-			p = &(*p)->rb_right;
-		} else {
-			atomic_inc(&entry->refcount);
-			read_unlock(&client->rb_lock);
-			return entry;
-		}
+	rcu_read_lock();
+	entry = latch_tree_find(buffer, &client->handle_root, &ion_tree_ops);
+	if (entry) {
+		handle = container_of(entry, typeof(*handle), rnode);
+		if (atomic_inc_not_zero(&handle->refcount))
+			ret = handle;
 	}
-	read_unlock(&client->rb_lock);
+	rcu_read_unlock();
 
-	return ERR_PTR(-EINVAL);
+	return ret;
 }
 
 static long ion_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
@@ -570,8 +575,8 @@ static int ion_open(struct inode *inode, struct file *file)
 	*client = (typeof(*client)){
 		.idev = idev,
 		.handle_idr = IDR_INIT(client->handle_idr),
-		.idr_lock = __RW_LOCK_UNLOCKED(client->idr_lock),
-		.rb_lock = __RW_LOCK_UNLOCKED(client->rb_lock)
+		.idr_lock = __SPIN_LOCK_UNLOCKED(client->idr_lock),
+		.rb_lock = __SPIN_LOCK_UNLOCKED(client->rb_lock)
 	};
 
 	file->private_data = client;
