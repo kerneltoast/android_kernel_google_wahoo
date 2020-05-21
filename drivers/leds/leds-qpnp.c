@@ -2846,7 +2846,7 @@ static ssize_t rgb_start_store(struct device *dev,
 		case QPNP_ID_RGB_RED:
 		case QPNP_ID_RGB_GREEN:
 		case QPNP_ID_RGB_BLUE:
-			pr_info("qpnp_led.%s: b:%02x on:%d off:%d\n",
+			pr_debug("qpnp_led.%s: b:%02x on:%d off:%d\n",
 				led_array[i].cdev.name,
 				led_array[i].cdev.brightness,
 				led_array[i].rgb_cfg->on_ms,
