@@ -200,7 +200,7 @@
 			qcom,mdss-dsc-encoders = <2>;
 			qcom,mdss-dsc-slice-height = <16>;
 			qcom,mdss-dsc-slice-width = <720>;
-			qcom,mdss-dsc-slice-per-pkt = <1>;
+			qcom,mdss-dsc-slice-per-pkt = <2>;
 
 			qcom,mdss-dsc-bit-per-component = <8>;
 			qcom,mdss-dsc-bit-per-pixel = <8>;
