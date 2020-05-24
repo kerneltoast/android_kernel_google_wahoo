@@ -62,129 +62,168 @@
 		qcom,panel-roi-alignment = <1440 0 1440 16 1440 16>;
 
 		qcom,mdss-dsi-on-command = [
-			39 01 00 00 00 00 03 B0
-			20 43
-			39 01 00 00 00 00 03 B0
-			A5 00
-			39 01 00 00 00 00 0D B2
-			5D 01 02 80 00 FF
-			FF 15 00 00 00 00
+			/* Manufacturer command protection */
+			39 01 00 00 00 00 03 B0 20 43
+			/* Manufacturer command protection (MCS accessible) */
+			39 01 00 00 00 00 03 B0 A5 00
+			/* MIPI DSI configuration */
+			39 01 00 00 00 00 0D B2 5D 01 02 80 00 FF FF 15 00 00 00 00
+			/* Enable TE */
 			05 01 00 00 00 00 01 35
+			/* Exit sleep mode and sleep 60 ms */
 			05 01 00 00 3C 00 01 11
-			39 01 00 00 00 00 13 E7
-			00 0D 76 23 00 00 5D 44
-			0D 76 0D 0D 00 0D 0D 0D
-			4A 00
-			15 01 00 00 00 00 02 53
-			00
-			15 01 00 00 00 00 02 55
-			0C
-			39 01 00 00 00 00 03 FB
-			03 77
-			39 01 00 00 00 00 06 ED
-			13 00 06 00 00
-			39 01 00 00 5A 00 0F E2
-			20 0D 08 A8 0A AA
-			04 44 80 80 80 5C
-			5C 5C
-			39 01 00 00 14 00 13 E7
-			00 0D 76 23 00 00 0D 44
-			0D 76 0D 0D 00 0D 0D 0D
-			4A 00
+			/* Set interval width to 4000 ns */
+			39 01 00 00 00 00 13 E7 00 0D 76 23 00 00 5D 44 0D 76 0D 0D 00 0D 0D 0D 4A 00
+			/* Write control display: normal mode */
+			15 01 00 00 00 00 02 53 00
+			/* Write power save */
+			15 01 00 00 00 00 02 55 0C
+			/* Enable frame rate control */
+			39 01 00 00 00 00 03 FB 03 77
+			/* Configure TE and pulse error detection signal */
+			39 01 00 00 00 00 06 ED 13 00 06 00 00
+			/* Step-up control and sleep 90 ms */
+			39 01 00 00 5A 00 0F E2 20 0D 08 A8 0A AA 04 44 80 80 0A 5C 5C 5C
+			/* Revert interval width to 3000 ns and sleep 20 ms */
+			39 01 00 00 14 00 13 E7 00 0D 76 23 00 00 0D 44 0D 76 0D 0D 00 0D 0D 0D 4A 00
 		];
 
 		qcom,mdss-dsi-post-panel-on-command = [
+			/* Display on */
 			05 01 00 00 00 00 01 29
 		];
 
 		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
 
 		qcom,mdss-dsi-off-command = [
-			39 01 00 00 00 00 05 E8
-			08 90 18 05
+			/* Set PMIC discharge */
+			39 01 00 00 00 00 05 E8 08 90 18 05
+			/* Display off */
 			05 01 00 00 00 00 01 28
+			/* Enter sleep mode and sleep 100 ms */
 			05 01 00 00 64 00 01 10
 		];
 		qcom,mdss-dsi-off-command-state = "dsi_lp_mode";
 		qcom,mdss-dsi-lp-mode-on = [
-			15 01 00 00 00 00 02 53
-			08
-			39 01 00 00 00 00 08 CA
-			00 46 00 46 00 16 11
-			39 01 00 00 00 00 0F E6
-			45 C5 04 88 D3 00 0A
-			0B 00 0A 0B 00 05 0B
+			/* Write control display: low-persistence mode */
+			15 01 00 00 00 00 02 53 08
+			/* Initialize duty cycle */
+			39 01 00 00 00 00 08 CA 00 46 00 46 00 16 11
+			/* Related to low persistence */
+			39 01 00 00 00 00 0F E6 45 C5 04 88 D3 00 0A 0B 00 0A 0B 00 05 0B
 			];
 		qcom,mdss-dsi-lp-mode-off = [
-			15 01 00 00 00 00 02 53
-			00
-			39 01 00 00 00 00 08 CA
-			00 46 00 46 00 16 10
-			39 01 00 00 00 00 0F E6
-			45 C5 04 88 D1 00 0A
-			0B 00 0A 0B 00 05 0B
+			/* Write control display: normal mode */
+			15 01 00 00 00 00 02 53 00
+			/* Reset duty cycle */
+			39 01 00 00 00 00 08 CA 00 46 00 46 00 16 10
+			/* Related to low persistence */
+			39 01 00 00 00 00 0F E6 45 C5 04 88 D1 00 0A 0B 00 0A 0B 00 05 0B
 			];
 		qcom,mdss-dsi-lp-change-state = "dsi_hs_mode";
 		qcom,mode-control-dsi-state = "dsi_lp_mode";
 
 		qcom,alpm-off-command = [
+			/* Set minimum CABC brightness to 0 */
 			15 01 00 00 00 00 02 5E 00
+			/* Set brightness to 0 */
 			15 01 00 00 00 00 02 51 00
+			/* Blank display to avoid flicker */
 			05 01 00 00 00 00 01 22
+			/* Set ALPM brightness to 0x33 and sleep 18 ms */
 			39 01 00 00 12 00 02 E4 33
+			/* Exit idle mode */
 			05 01 00 00 00 00 01 38
+			/* Step-up control */
 			39 01 00 00 00 00 03 E2 20 0D
+			/* Display off and sleep 64 ms */
 			05 01 00 00 40 00 01 28
+			/* Set ALPM brightness to normal (exit ALPM) */
 			39 01 00 00 00 00 02 E4 30
+			/* Enter normal mode */
 			05 01 00 00 00 00 01 13
+			/* Set display on */
 			05 01 00 00 00 00 01 29
 		];
 		qcom,alpm-dim-command = [
+			/* Blank display to avoid flicker */
 			05 01 00 00 00 00 01 22
+			/* Set normal color depth */
 			15 01 00 00 00 00 02 E0 1A
+			/* Related to ALPM */
 			39 01 00 00 00 00 07 E5 04 06 03 03 56 61
 			39 01 00 00 00 00 09 E7 00 0D 76 23 00 00 0D 44
+			/* Set ALPM brightness to low */
 			39 01 00 00 00 00 03 E4 33 44
+			/* Step-up control and sleep 102 ms */
 			39 01 00 00 66 00 03 E2 20 03
+			/* Enter idle mode */
 			05 01 00 00 00 00 01 39
+			/* Set brightness to 53 */
 			15 01 00 00 00 00 02 51 35
+			/* Enter normal mode and sleep 84 ms */
 			05 01 00 00 54 00 01 13
+			/* Set minimum CABC brightness to 16 */
 			15 01 00 00 00 00 02 5E 10
 		];
 		qcom,alpm-low-command = [
+			/* Blank display to avoid flicker */
 			05 01 00 00 00 00 01 22
+			/* Set normal color depth */
 			15 01 00 00 00 00 02 E0 1A
+			/* Related to ALPM */
 			39 01 00 00 00 00 07 E5 04 06 03 03 56 61
 			39 01 00 00 00 00 09 E7 00 0D 76 23 00 00 0D 44
+			/* Set ALPM brightness to low */
 			39 01 00 00 00 00 03 E4 33 44
+			/* Step-up control and sleep 102 ms */
 			39 01 00 00 66 00 03 E2 20 03
+			/* Enter idle mode */
 			05 01 00 00 00 00 01 39
+			/* Set brightness to 144 */
 			15 01 00 00 00 00 02 51 90
+			/* Enter normal mode and sleep 84 ms */
 			05 01 00 00 54 00 01 13
+			/* Set minimum CABC brightness to 16 */
 			15 01 00 00 00 00 02 5E 10
 		];
 		qcom,alpm-high-command = [
+			/* Blank display to avoid flicker */
 			05 01 00 00 00 00 01 22
+			/* Set normal color depth */
 			15 01 00 00 00 00 02 E0 1A
+			/* Related to ALPM */
 			39 01 00 00 00 00 07 E5 04 06 03 03 56 61
 			39 01 00 00 00 00 09 E7 00 0D 76 23 00 00 0D 44
+			/* Set ALPM brightness to high */
 			39 01 00 00 00 00 03 E4 33 04
+			/* Step-up control and sleep 102 ms */
 			39 01 00 00 66 00 03 E2 20 03
+			/* Enter idle mode */
 			05 01 00 00 00 00 01 39
+			/* Set brightness to 246 */
 			15 01 00 00 00 00 02 51 F6
+			/* Enter normal mode and sleep 84 ms */
 			05 01 00 00 54 00 01 13
+			/* Set minimum CABC brightness to 16 */
 			15 01 00 00 00 00 02 5E 10
 		];
 		qcom,alpm-dim-transition-command = [
+			/* Set brightness to 53 */
 			15 01 00 00 00 00 02 51 35
+			/* Set ALPM brightness to low and sleep 32 ms */
 			39 01 00 00 20 00 03 E4 33 44
 		];
 		qcom,alpm-low-transition-command = [
+			/* Set brightness to 144 */
 			15 01 00 00 00 00 02 51 90
+			/* Set ALPM brightness to low and sleep 32 ms */
 			39 01 00 00 20 00 03 E4 33 44
 		];
 		qcom,alpm-high-transition-command = [
+			/* Set brightness to 246 */
 			15 01 00 00 00 00 02 51 F6
+			/* Set ALPM brightness to high and sleep 32 ms */
 			39 01 00 00 20 00 03 E4 33 04
 		];
 		qcom,mdss-pan-physical-width-dimension = <68>;
