@@ -7,7 +7,6 @@ config ARM_GIC
 	select IRQ_DOMAIN
 	select IRQ_DOMAIN_HIERARCHY
 	select MULTI_IRQ_HANDLER
-	select QCOM_SHOW_RESUME_IRQ
 
 config ARM_GIC_V2M
 	bool
