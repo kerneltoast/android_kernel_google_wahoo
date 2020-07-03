@@ -137,6 +137,7 @@ struct sync_fence_cb {
 	struct fence_cb cb;
 	struct fence *sync_pt;
 	struct sync_fence *fence;
+	struct sync_fence_cb *next;
 };
 
 /**
@@ -165,7 +166,7 @@ struct sync_fence {
 	wait_queue_head_t	wq;
 	atomic_t		status;
 
-	struct sync_fence_cb	cbs[];
+	struct sync_fence_cb	*cbs;
 };
 
 struct sync_fence_waiter;
