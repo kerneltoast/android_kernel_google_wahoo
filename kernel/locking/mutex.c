@@ -226,24 +226,30 @@ bool mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
 {
 	bool ret = true;
 
-	rcu_read_lock();
-	while (lock->owner == owner) {
+	while (1) {
+		bool same_owner;
+
 		/*
-		 * Ensure we emit the owner->on_cpu, dereference _after_
-		 * checking lock->owner still matches owner. If that fails,
+		 * Ensure lock->owner still matches owner. If that fails,
 		 * owner might point to freed memory. If it still matches,
 		 * the rcu_read_lock() ensures the memory stays valid.
 		 */
-		barrier();
+		rcu_read_lock();
+		same_owner = lock->owner == owner;
+		if (same_owner)
+			ret = owner->on_cpu;
+		rcu_read_unlock();
 
-		if (!owner->on_cpu || need_resched()) {
+		if (!ret || !same_owner)
+			break;
+
+		if (need_resched()) {
 			ret = false;
 			break;
 		}
 
 		cpu_relax_lowlatency();
 	}
-	rcu_read_unlock();
 
 	return ret;
 }
