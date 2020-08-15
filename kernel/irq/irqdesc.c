@@ -27,8 +27,8 @@ static struct lock_class_key irq_desc_lock_class;
 #if defined(CONFIG_SMP)
 static void __init init_irq_default_affinity(void)
 {
-	alloc_cpumask_var(&irq_default_affinity, GFP_NOWAIT);
-	cpumask_setall(irq_default_affinity);
+	zalloc_cpumask_var(&irq_default_affinity, GFP_NOWAIT);
+	cpumask_set_cpu(0, irq_default_affinity);
 }
 #else
 static void __init init_irq_default_affinity(void)
