@@ -35,6 +35,8 @@ struct ion_buffer {
 	struct sg_table *sg_table;
 	struct mutex kmap_lock;
 	struct work_struct free;
+	struct list_head map_freelist;
+	spinlock_t freelist_lock;
 	atomic_t refcount;
 	void *priv_virt;
 	void *vaddr;

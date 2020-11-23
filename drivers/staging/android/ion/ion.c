@@ -27,11 +27,22 @@ struct ion_client {
 	spinlock_t rb_lock;
 };
 
+struct buffer_map {
+	struct sg_table table;
+	struct list_head list;
+	struct device *dev;
+};
+
 static void ion_buffer_free_work(struct work_struct *work)
 {
 	struct ion_buffer *buffer = container_of(work, typeof(*buffer), free);
 	struct ion_heap *heap = buffer->heap;
+	struct buffer_map *bmap, *tmp;
 
+	list_for_each_entry_safe(bmap, tmp, &buffer->map_freelist, list) {
+		sg_free_table(&bmap->table);
+		kfree(bmap);
+	}
 	msm_dma_buf_freed(&buffer->iommu_data);
 	if (buffer->kmap_refcount)
 		heap->ops->unmap_kernel(heap, buffer);
@@ -58,6 +69,8 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap, size_t len,
 		.refcount = ATOMIC_INIT(1),
 		.kmap_lock = __MUTEX_INITIALIZER(buffer->kmap_lock),
 		.free = __WORK_INITIALIZER(buffer->free, ion_buffer_free_work),
+		.map_freelist = LIST_HEAD_INIT(buffer->map_freelist),
+		.freelist_lock = __SPIN_LOCK_INITIALIZER(buffer->freelist_lock),
 		.iommu_data = {
 			.map_list = LIST_HEAD_INIT(buffer->iommu_data.map_list),
 			.lock = __MUTEX_INITIALIZER(buffer->iommu_data.lock)
@@ -222,21 +235,40 @@ int __ion_phys(struct ion_buffer *buffer, ion_phys_addr_t *addr, size_t *len)
 	return heap->ops->phys(heap, buffer, addr, len);
 }
 
-static struct sg_table *ion_dup_sg_table(struct sg_table *orig_table)
+static struct sg_table *ion_dup_sg_table(struct device *dev,
+					 struct ion_buffer *buffer)
 {
+	struct sg_table *orig_table = buffer->sg_table;
 	unsigned int nents = orig_table->nents;
 	struct scatterlist *sg_d, *sg_s;
+	struct buffer_map *bmap;
 	struct sg_table *table;
+	bool found = false;
 
-	table = kmalloc(sizeof(*table), GFP_KERNEL);
-	if (!table)
+	spin_lock(&buffer->freelist_lock);
+	list_for_each_entry(bmap, &buffer->map_freelist, list) {
+		if (bmap->dev == dev) {
+			list_del(&bmap->list);
+			found = true;
+			break;
+		}
+	}
+	spin_unlock(&buffer->freelist_lock);
+
+	if (found)
+		return &bmap->table;
+
+	bmap = kmalloc(sizeof(*bmap), GFP_KERNEL);
+	if (!bmap)
 		return NULL;
 
+	table = &bmap->table;
 	if (sg_alloc_table(table, nents, GFP_KERNEL)) {
-		kfree(table);
+		kfree(bmap);
 		return NULL;
 	}
 
+	bmap->dev = dev;
 	for (sg_d = table->sgl, sg_s = orig_table->sgl;
 	     nents > SG_MAX_SINGLE_ALLOC; nents -= SG_MAX_SINGLE_ALLOC - 1,
 	     sg_d = sg_chain_ptr(&sg_d[SG_MAX_SINGLE_ALLOC - 1]),
@@ -256,15 +288,21 @@ static struct sg_table *ion_map_dma_buf(struct dma_buf_attachment *attachment,
 	struct ion_buffer *buffer = container_of(dmabuf->priv, typeof(*buffer),
 						 iommu_data);
 
-	return ion_dup_sg_table(buffer->sg_table);
+	return ion_dup_sg_table(attachment->dev, buffer);
 }
 
 static void ion_unmap_dma_buf(struct dma_buf_attachment *attachment,
 			      struct sg_table *table,
 			      enum dma_data_direction dir)
 {
-	sg_free_table(table);
-	kfree(table);
+	struct dma_buf *dmabuf = attachment->dmabuf;
+	struct ion_buffer *buffer = container_of(dmabuf->priv, typeof(*buffer),
+						 iommu_data);
+	struct buffer_map *bmap = container_of(table, typeof(*bmap), table);
+
+	spin_lock(&buffer->freelist_lock);
+	list_add(&bmap->list, &buffer->map_freelist);
+	spin_unlock(&buffer->freelist_lock);
 }
 
 static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
