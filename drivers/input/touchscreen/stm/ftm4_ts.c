@@ -1949,6 +1949,7 @@ static int fts_probe(struct i2c_client *client, const struct i2c_device_id *idp)
 		goto err_enable_irq;
 	}
 
+	info->board->irq_type |= IRQF_PERF_CRITICAL;
 	retval = request_threaded_irq(info->irq, fts_hard_interrupt_handler,
 			fts_interrupt_handler, info->board->irq_type,
 			FTS_TS_DRV_NAME, info);
